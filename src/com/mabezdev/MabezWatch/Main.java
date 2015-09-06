@@ -152,7 +152,7 @@ public class Main extends Activity {
                 BTArrayAdapter.add(device.getName() + "\n" + device.getAddress());
                 BTArrayAdapter.notifyDataSetChanged();
             }
-            if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equalsIgnoreCase( action ) )    {
+            if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equalsIgnoreCase( action ) )    {//this needs testing
                 System.out.println("Device Disconnected change var");
                 pairedDevices.remove(device);
             }
@@ -176,7 +176,7 @@ public class Main extends Activity {
         }
     }
 
-    public void off(View view){
+    public void off(){
         myBluetoothAdapter.disable();
         text.setText("Status: Disconnected");
 
@@ -188,9 +188,12 @@ public class Main extends Activity {
     protected void onDestroy() {
         // TODO Auto-generated method stub
         super.onDestroy();
-        if(bReceiver==null) {
+        try {
             unregisterReceiver(bReceiver);
+        }catch (Exception e){
+            System.out.println("bReciver was never used therefore not unregistered");
         }
+
     }
 
 
@@ -232,6 +235,7 @@ public class Main extends Activity {
                 socket.close();
                 socket=null;
                 finish();
+                off();
                 return;
             } catch (IOException e) {
                 Log.e("EF-BTBee", "", e);
