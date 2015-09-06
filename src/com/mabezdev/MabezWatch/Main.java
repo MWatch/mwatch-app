@@ -92,7 +92,7 @@ public class Main extends Activity {
                     for(BluetoothDevice d:pairedDevices){
                         if(d.getAddress().equals(BTArrayAdapter.getItem(position).split("\n")[1])){
                             System.out.println("Found BT Device trying to connect");
-                            connect(d);
+                            connect(d);// this should be ran on a separate thread
                         }
                     }
 
@@ -144,12 +144,17 @@ public class Main extends Activity {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             // When discovery finds a device
+            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 // Get the BluetoothDevice object from the Intent
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+
                 // add the name and the MAC address of the object to the arrayAdapter
                 BTArrayAdapter.add(device.getName() + "\n" + device.getAddress());
                 BTArrayAdapter.notifyDataSetChanged();
+            }
+            if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equalsIgnoreCase( action ) )    {
+                System.out.println("Device Disconnected change var");
+                pairedDevices.remove(device);
             }
         }
     };
@@ -196,7 +201,7 @@ public class Main extends Activity {
                 socket=null;
             }
             //Create a Socket connection: need the server's UUID number of registered
-            socket = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805f9b34fb"));
+            socket = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805f9b34fb"));//standard serial string ID
 
             socket.connect();
             Log.d("EF-BTBee", ">>Client connectted");
