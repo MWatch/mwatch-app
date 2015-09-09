@@ -8,8 +8,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 
-import java.io.IOException;
-import java.io.InputStream;
+
 import java.io.OutputStream;
 import java.text.DateFormat;
 import java.util.Date;
@@ -18,6 +17,7 @@ import java.util.UUID;
 
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -29,15 +29,17 @@ public class Main extends Activity {
     private Button onBtn;
     private Button offBtn;
 
-    BluetoothSocket socket;
+
     private Button listBtn;
     private Button findBtn;
+    private Button dcButton;
     private TextView text;
     private BluetoothAdapter myBluetoothAdapter;
     private Set<BluetoothDevice> pairedDevices;
     private ListView myListView;
     private ArrayAdapter<String> BTArrayAdapter;
-    private OutputStream outputStream;
+    private static BluetoothDevice chosenBT;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +81,18 @@ public class Main extends Activity {
                 }
             });
 
+            dcButton = (Button) findViewById(R.id.dcButton);
+            dcButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    stopService(new Intent(getBaseContext(), BTBGService.class));
+                    findBtn.setVisibility(View.VISIBLE);
+                    listBtn.setVisibility(View.VISIBLE);
+                    dcButton.setVisibility(View.INVISIBLE);
+                }
+            });
+            dcButton.setVisibility(View.INVISIBLE);
+
             myListView = (ListView)findViewById(R.id.listView1);
 
             // create the arrayAdapter that contains the BTDevices, and set it to the ListView
@@ -92,13 +106,23 @@ public class Main extends Activity {
                     for(BluetoothDevice d:pairedDevices){
                         if(d.getAddress().equals(BTArrayAdapter.getItem(position).split("\n")[1])){
                             System.out.println("Found BT Device trying to connect");
-                            connect(d);// this should be ran on a separate thread
+                            //start new service to keep in contact with watch in background
+                            chosenBT = d;// set the device to connec to
+                            startService(new Intent(getBaseContext(),BTBGService.class));
+                            findBtn.setVisibility(View.INVISIBLE);
+                            listBtn.setVisibility(View.INVISIBLE);
+                            dcButton.setVisibility(View.VISIBLE);
+
                         }
                     }
 
                 }
             });
         }
+    }
+
+    public static BluetoothDevice getDeviceToConnect(){
+        return chosenBT;
     }
 
     public void on(){
@@ -197,50 +221,5 @@ public class Main extends Activity {
     }
 
 
-    protected void connect(BluetoothDevice device) {
-        //BluetoothSocket socket = null;
-        try {
-            if(socket!=null){
-                socket=null;
-            }
-            //Create a Socket connection: need the server's UUID number of registered
-            socket = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805f9b34fb"));//standard serial string ID
-
-            socket.connect();
-            Log.d("EF-BTBee", ">>Client connectted");
-
-
-            outputStream = socket.getOutputStream();
-            outputStream.write(DateFormat.getDateTimeInstance().format(new Date()).getBytes()); //replace with func to send all necessary data ie weather etc
-
-        } catch (IOException e) {
-            Log.e("EF-BTBee", "", e);
-        } finally {
-            disconnect();
-        }
-    }
-
-    private void disconnect(){
-        if (socket != null) {
-            try {
-                Log.d("EF-BTBee", ">>Client Close");
-                // give a chance to send final message
-                try {
-                    Thread.sleep(1000);
-                }catch (Exception e){
-
-                }
-                //close streams
-                outputStream.close();
-                socket.close();
-                socket=null;
-                finish();
-                off();
-                return;
-            } catch (IOException e) {
-                Log.e("EF-BTBee", "", e);
-            }
-        }
-    }
 
 }
