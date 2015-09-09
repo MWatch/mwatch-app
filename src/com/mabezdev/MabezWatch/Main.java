@@ -86,12 +86,8 @@ public class Main extends Activity {
                 @Override
                 public void onClick(View v) {
                     stopService(new Intent(getBaseContext(), BTBGService.class));
-                    findBtn.setVisibility(View.VISIBLE);
-                    listBtn.setVisibility(View.VISIBLE);
-                    dcButton.setVisibility(View.INVISIBLE);
                 }
             });
-            dcButton.setVisibility(View.INVISIBLE);
 
             myListView = (ListView)findViewById(R.id.listView1);
 
@@ -107,11 +103,8 @@ public class Main extends Activity {
                         if(d.getAddress().equals(BTArrayAdapter.getItem(position).split("\n")[1])){
                             System.out.println("Found BT Device trying to connect");
                             //start new service to keep in contact with watch in background
-                            chosenBT = d;// set the device to connec to
+                            chosenBT = d;// set the device to connect to
                             startService(new Intent(getBaseContext(),BTBGService.class));
-                            findBtn.setVisibility(View.INVISIBLE);
-                            listBtn.setVisibility(View.INVISIBLE);
-                            dcButton.setVisibility(View.VISIBLE);
 
                         }
                     }

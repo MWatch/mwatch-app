@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.Timer;
 
 /**
@@ -14,6 +15,7 @@ public class BTBGService extends Service {
 
     private Thread CommunicationThread;
     private final static int DataRefreshTime = 5000;
+    private Timer timer;
     @Override
     public IBinder onBind(Intent intent) {
         //c
@@ -28,9 +30,11 @@ public class BTBGService extends Service {
         CommunicationThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                Timer timer = new Timer();
+
+                timer = new Timer();
                 timer.schedule(new TimedData(), 0, DataRefreshTime);
                 //connect send ata then dc
+
 
             }
         });
@@ -41,9 +45,11 @@ public class BTBGService extends Service {
 
     @Override
     public void onDestroy(){
-        BTConnection.disconnect();
-        CommunicationThread.interrupt();
+        timer.cancel();
+        System.out.println("Stopping BTBGService");
         Toast.makeText(this,"BT Device disconnected",Toast.LENGTH_LONG).show();
         super.onDestroy();
+        //BTConnection.disconnect();
+        //CommunicationThread.interrupt();
     }
 }

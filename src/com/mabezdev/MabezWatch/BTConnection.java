@@ -18,9 +18,12 @@ public class BTConnection{
 
     private static OutputStream outputStream;
     private static BluetoothSocket socket;
+    private static boolean canConnect =true;
+    private static BluetoothDevice btdev;
 
     public BTConnection(BluetoothDevice b){
-        connect(b);
+        btdev = b;
+        connect(btdev);
     }
 
     public static void connect(BluetoothDevice device) {//doesnt really need to be stastic or public lean up later
@@ -33,8 +36,9 @@ public class BTConnection{
             socket = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805f9b34fb"));//standard serial string ID
 
             socket.connect();
+            canConnect = true;
 
-            Log.d("EF-BTBee", ">>Client connectted");
+            Log.d("EF-BTBee", ">>Client connected");
 
 
             outputStream = socket.getOutputStream();
@@ -42,12 +46,17 @@ public class BTConnection{
 
         } catch (IOException e) {
             Log.e("EF-BTBee", "", e);
-        } finally {
+            //retry connection
+            //need timeout for when its actually dc'd for good
+            connect(btdev);
+        } catch(NullPointerException e1) {
+            e1.printStackTrace();
+        }finally{
             disconnect();
         }
     }
 
-    public static void disconnect(){//called upon service ondestroy
+    public static void disconnect(){//called upon service onDestroy
         if (socket != null) {
             try {
                 Log.d("EF-BTBee", ">>Client Close");
@@ -65,7 +74,13 @@ public class BTConnection{
                 return;
             } catch (IOException e) {
                 Log.e("EF-BTBee", "", e);
+            }catch(NullPointerException e1){
+                e1.printStackTrace();
             }
         }
+    }
+
+    public static boolean canConnect(){
+        return canConnect;
     }
 }
