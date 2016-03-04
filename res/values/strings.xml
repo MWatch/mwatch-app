@@ -9,5 +9,6 @@
     <string name="List">List paired Devices</string>
     <string name="Finding">Search new Devices / Cancel</string>
     <string name="Found">Search new Devices / Cancel</string>
+    <string name = "service_name">Notification Grabber</string>
 
 </resources>

@@ -2,11 +2,13 @@ package com.mabezdev.MabezWatch;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.os.Bundle;
 import android.util.Log;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -18,8 +20,10 @@ public class BTConnection{
 
     private static OutputStream outputStream;
     private static BluetoothSocket socket;
-    private static boolean canConnect =true;
+    private static boolean canConnect = true;
     private static BluetoothDevice btdev;
+
+    //title, text
 
     public BTConnection(BluetoothDevice b){
         btdev = b;
@@ -42,16 +46,42 @@ public class BTConnection{
 
 
             outputStream = socket.getOutputStream();
-            outputStream.write(DateFormat.getDateTimeInstance().format(new Date()).getBytes()); //replace with func to send all necessary data ie weather etc
+            String date = "<d>"+DateFormat.getDateTimeInstance().format(new Date());
+            outputStream.write(date.getBytes()); //replace with func to send all necessary data ie weather etc
+            //once sent remember to remove them from the queue
+
+            Thread.sleep(500);
+
+            ArrayList toRemove = new ArrayList();
+            for(Bundle extra: Main.getNotificationQueue()){
+                String notification = "<n>"+extra.getString("PKG");
+                for(int i = 0; i < 2; i++){
+                    notification += "<i>"+extra.getString("TITLE");
+                    notification += "<i>"+extra.getString("TEXT");
+                }
+                Log.d("EF-BTBee",notification);
+                outputStream.write(notification.getBytes());
+                toRemove.add(extra);
+            }
+            Main.removeNotifications(toRemove);
+
 
         } catch (IOException e) {
             Log.e("EF-BTBee", "", e);
             //retry connection
             //need timeout for when its actually dc'd for good
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
             connect(btdev);
         } catch(NullPointerException e1) {
             e1.printStackTrace();
-        }finally{
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally{
             disconnect();
         }
     }

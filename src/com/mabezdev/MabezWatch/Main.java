@@ -1,6 +1,6 @@
 package com.mabezdev.MabezWatch;
 
-import android.bluetooth.BluetoothSocket;
+
 import android.os.Bundle;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -8,43 +8,51 @@ import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 
-
-import java.io.OutputStream;
-import java.text.DateFormat;
-import java.util.Date;
+import java.util.ArrayList;
 import java.util.Set;
-import java.util.UUID;
-
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Parcelable;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.*;
+
 
 public class Main extends Activity {
 
     private static final int REQUEST_ENABLE_BT = 1;
     private Button onBtn;
     private Button offBtn;
-
-
     private Button listBtn;
     private Button findBtn;
     private Button dcButton;
+    private Button enablePush;
     private TextView text;
     private BluetoothAdapter myBluetoothAdapter;
     private Set<BluetoothDevice> pairedDevices;
     private ListView myListView;
     private ArrayAdapter<String> BTArrayAdapter;
     private static BluetoothDevice chosenBT;
+    private NotificationReceiver nReceiver;
+
+    private static ArrayList<Bundle> notificationQueue;
+
+
+    /*
+    todo: Add the notificationListenerService to grab my notifications to my phone and push them to my phone http://stackoverflow.com/questions/3030626/android-get-all-the-notifications-by-code
+    todo: make the app look nicer
+    todo: stop the app fro starting again on format change (portrait to landscape and visa versa)
+     */
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+
+        notificationQueue = new ArrayList<Bundle>();
+
+        startService(new Intent(getBaseContext(),myNotificationListener.class));
 
         // take an instance of BluetoothAdapter - Bluetooth radio
         myBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -58,60 +66,37 @@ public class Main extends Activity {
             Toast.makeText(getApplicationContext(),"Your device does not support Bluetooth",
                     Toast.LENGTH_LONG).show();
         } else {
-            text = (TextView) findViewById(R.id.text);
             on();
-
-            listBtn = (Button)findViewById(R.id.paired);
-            listBtn.setOnClickListener(new OnClickListener() {
-
-                @Override
-                public void onClick(View v) {
-                    // TODO Auto-generated method stub
-                    list(v);
-                }
-            });
-
-            findBtn = (Button)findViewById(R.id.search);
-            findBtn.setOnClickListener(new OnClickListener() {
-
-                @Override
-                public void onClick(View v) {
-                    // TODO Auto-generated method stub
-                    find(v);
-                }
-            });
-
-            dcButton = (Button) findViewById(R.id.dcButton);
-            dcButton.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    stopService(new Intent(getBaseContext(), BTBGService.class));
-                }
-            });
-
-            myListView = (ListView)findViewById(R.id.listView1);
-
-            // create the arrayAdapter that contains the BTDevices, and set it to the ListView
-            BTArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
-            myListView.setAdapter(BTArrayAdapter);
-
-            // setup onclick listener for items in list view so that we connect from there we want to run bg program feeding the smart watch info
-            myListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    for(BluetoothDevice d:pairedDevices){
-                        if(d.getAddress().equals(BTArrayAdapter.getItem(position).split("\n")[1])){
-                            System.out.println("Found BT Device trying to connect");
-                            //start new service to keep in contact with watch in background
-                            chosenBT = d;// set the device to connect to
-                            startService(new Intent(getBaseContext(),BTBGService.class));
-
-                        }
-                    }
-
-                }
-            });
         }
+
+        setupUI();
+
+        nReceiver = new NotificationReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("com.mabez.GET_NOTIFICATIONS");
+        registerReceiver(nReceiver,filter);
+    }
+
+    public void addNotification(Bundle notification){
+        notificationQueue.add(notification);
+        printNotificationQueue();
+    }
+
+    public static ArrayList<Bundle> getNotificationQueue(){
+        return notificationQueue;
+    }
+
+    public static void removeNotifications(ArrayList e){
+        notificationQueue.removeAll(e);
+    }
+
+    public void printNotificationQueue(){
+        for(Bundle extras : notificationQueue){
+            System.out.println("Package: " + extras.getString("PKG"));
+            System.out.println("Title: " + extras.getString("TITLE"));
+            System.out.println("Text: " + extras.getString("TEXT"));
+        }
+        System.out.println("Number of Notifications: "+notificationQueue.size());
     }
 
     public static BluetoothDevice getDeviceToConnect(){
@@ -201,18 +186,97 @@ public class Main extends Activity {
                 Toast.LENGTH_LONG).show();
     }
 
+    public void setupUI(){
+        text = (TextView) findViewById(R.id.text);
+
+        listBtn = (Button)findViewById(R.id.paired);
+        listBtn.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                list(v);
+            }
+        });
+
+        findBtn = (Button)findViewById(R.id.search);
+        findBtn.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                find(v);
+            }
+        });
+
+        dcButton = (Button) findViewById(R.id.dcButton);
+        dcButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stopService(new Intent(getBaseContext(), BTBGService.class));
+            }
+        });
+        enablePush = (Button) findViewById(R.id.notification);
+        enablePush.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.i("NOTICE","Requesting Push notifications");
+                Intent i = new Intent("com.mabez.GET_NOTIFICATIONS");
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                i.putExtra("command","list");
+                sendBroadcast(i);
+            }
+        });
+
+        myListView = (ListView)findViewById(R.id.listView1);
+
+        // create the arrayAdapter that contains the BTDevices, and set it to the ListView
+        BTArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
+        myListView.setAdapter(BTArrayAdapter);
+
+        // setup onclick listener for items in list view so that we connect from there we want to run bg program feeding the smart watch info
+        myListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                for(BluetoothDevice d:pairedDevices){
+                    if(d.getAddress().equals(BTArrayAdapter.getItem(position).split("\n")[1])){
+                        System.out.println("Found BT Device trying to connect");
+                        //start new service to keep in contact with watch in background
+                        chosenBT = d;// set the device to connect to
+                        startService(new Intent(getBaseContext(),BTBGService.class));
+
+                    }
+                }
+
+            }
+        });
+    }
+
+
     @Override
     protected void onDestroy() {
         // TODO Auto-generated method stub
         super.onDestroy();
         try {
             unregisterReceiver(bReceiver);
+            unregisterReceiver(nReceiver);
         }catch (Exception e){
-            System.out.println("bReciver was never used therefore not unregistered");
+            System.out.println("bReceiver was never used therefore not unregistered");
         }
 
     }
 
+    class NotificationReceiver extends BroadcastReceiver{
+        @Override
 
+        public void onReceive(Context context, Intent intent) {
+            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            Bundle extras = intent.getExtras();
+            if(extras.getString("PKG")!=null) {
+                Main.this.addNotification(extras);
+            } else {
+                System.out.println("Null Notification received.");
+            }
+        }
+
+    }
 
 }
