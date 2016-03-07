@@ -37,7 +37,11 @@ public class myNotificationListener extends NotificationListenerService {
         Bundle extras = sbn.getNotification().extras;
         sendNewToApp.putExtra("PKG",sbn.getPackageName());
         sendNewToApp.putExtra("TITLE",extras.getString("android.title"));
-        sendNewToApp.putExtra("TEXT",extras.getCharSequence("android.text").toString());
+        if(extras.getCharSequence("android.text")!=null){
+            sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.text").toString());
+        } else {
+            sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.textLines").toString());
+        }
         sendBroadcast(sendNewToApp);
     }
 

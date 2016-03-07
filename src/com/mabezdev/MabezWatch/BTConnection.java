@@ -62,7 +62,10 @@ public class BTConnection{
                 Log.d("EF-BTBee",notification);
                 outputStream.write(notification.getBytes());
                 toRemove.add(extra);
+                //make sure they send separately
+                Thread.sleep(500);
             }
+
             Main.removeNotifications(toRemove);
 
 

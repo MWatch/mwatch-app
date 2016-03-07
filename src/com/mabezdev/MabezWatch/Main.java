@@ -27,6 +27,8 @@ public class Main extends Activity {
     private Button findBtn;
     private Button dcButton;
     private Button enablePush;
+    private Button addFilter;
+    private EditText filterBox;
     private TextView text;
     private BluetoothAdapter myBluetoothAdapter;
     private Set<BluetoothDevice> pairedDevices;
@@ -36,6 +38,7 @@ public class Main extends Activity {
     private NotificationReceiver nReceiver;
 
     private static ArrayList<Bundle> notificationQueue;
+    private static ArrayList<String> filter;
 
 
     /*
@@ -51,6 +54,7 @@ public class Main extends Activity {
         setContentView(R.layout.main);
 
         notificationQueue = new ArrayList<Bundle>();
+        filter = new ArrayList<String>();
 
         startService(new Intent(getBaseContext(),myNotificationListener.class));
 
@@ -188,6 +192,18 @@ public class Main extends Activity {
 
     public void setupUI(){
         text = (TextView) findViewById(R.id.text);
+        filterBox = (EditText) findViewById(R.id.editText);
+
+        addFilter = (Button) findViewById(R.id.addFilter);
+        addFilter.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                filter.add(filterBox.getText().toString().toLowerCase());
+                Toast.makeText(getApplicationContext(),"Added filter for '"+filterBox.getText().toString()+"'", Toast.LENGTH_LONG);
+                filterBox.setText("");
+            }
+        });
+
 
         listBtn = (Button)findViewById(R.id.paired);
         listBtn.setOnClickListener(new OnClickListener() {
@@ -271,7 +287,11 @@ public class Main extends Activity {
             intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             Bundle extras = intent.getExtras();
             if(extras.getString("PKG")!=null) {
-                Main.this.addNotification(extras);
+                if(!filter.contains(extras.getString("PKG"))) {
+                    Main.this.addNotification(extras);
+                } else {
+                    System.out.println("Notification from package '"+extras.getString("PKG")+"' has been filtered.");
+                }
             } else {
                 System.out.println("Null Notification received.");
             }

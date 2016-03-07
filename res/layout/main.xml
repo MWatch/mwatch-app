@@ -13,10 +13,10 @@
 
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_below="@+id/text">
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_below="@+id/text" android:id="@+id/linearLayout">
 
         <Button
             android:id="@+id/paired"
@@ -40,17 +40,28 @@
     </LinearLayout>
 
     <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Disconnect Watch"
-        android:id="@+id/dcButton"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="71dp"/>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Disconnect Watch"
+            android:id="@+id/dcButton"
+            android:layout_marginBottom="44dp" android:layout_alignParentBottom="true"
+            android:layout_alignEnd="@+id/notification"/>
     <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Push Notifications"
             android:id="@+id/notification" android:layout_above="@+id/dcButton" android:layout_centerHorizontal="true"/>
+    <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/editText" android:layout_below="@+id/linearLayout"
+            android:layout_alignEnd="@+id/dcButton"/>
+    <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add filter"
+            android:id="@+id/addFilter"
+            android:layout_alignBottom="@+id/editText" android:layout_toEndOf="@+id/editText"/>
 
 </RelativeLayout>
