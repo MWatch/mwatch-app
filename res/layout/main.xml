@@ -4,40 +4,7 @@
                 android:layout_height="match_parent"
                 tools:context=".MainActivity" >
 
-    <TextView
-        android:id="@+id/text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="@string/Text" />
 
-
-    <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_below="@+id/text" android:id="@+id/linearLayout">
-
-        <Button
-            android:id="@+id/paired"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/List" />
-
-        <Button
-            android:id="@+id/search"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/Found"/>
-
-        <ListView
-            android:id="@+id/listView1"
-            android:layout_width="fill_parent"
-            android:layout_height="200dp" >
-
-        </ListView>
-
-    </LinearLayout>
 
     <Button
             android:layout_width="wrap_content"
@@ -50,12 +17,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Push Notifications"
-            android:id="@+id/notification" android:layout_above="@+id/dcButton" android:layout_centerHorizontal="true"/>
+            android:id="@+id/notification"
+            android:layout_below="@+id/addFilter" android:layout_centerHorizontal="true"
+            android:layout_marginTop="23dp"/>
     <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/editText" android:layout_below="@+id/linearLayout"
-            android:layout_alignEnd="@+id/dcButton"/>
+            android:id="@+id/editText"
+            android:layout_alignParentTop="true" android:layout_alignParentStart="true"
+            android:layout_marginTop="135dp" android:layout_alignEnd="@+id/notification"/>
     <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_width="wrap_content"
@@ -63,5 +33,18 @@
             android:text="Add filter"
             android:id="@+id/addFilter"
             android:layout_alignBottom="@+id/editText" android:layout_toEndOf="@+id/editText"/>
+    <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pair Device"
+            android:id="@+id/connect"
+            android:layout_marginBottom="34dp" android:layout_above="@+id/dcButton"
+            android:layout_centerHorizontal="true"/>
+    <Switch
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Connect"
+            android:id="@+id/connectSwitch" android:layout_alignParentTop="true" android:layout_alignEnd="@+id/addFilter"
+            android:layout_marginTop="31dp" android:checked="false"/>
 
 </RelativeLayout>

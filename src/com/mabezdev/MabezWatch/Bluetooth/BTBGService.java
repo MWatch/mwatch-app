@@ -1,11 +1,10 @@
-package com.mabezdev.MabezWatch;
+package com.mabezdev.MabezWatch.Bluetooth;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 import android.widget.Toast;
 
-import java.io.IOException;
 import java.util.Timer;
 
 /**

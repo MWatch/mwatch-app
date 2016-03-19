@@ -1,4 +1,6 @@
-package com.mabezdev.MabezWatch;
+package com.mabezdev.MabezWatch.Bluetooth;
+
+import com.mabezdev.MabezWatch.Activities.Connect;
 
 import java.util.TimerTask;
 
@@ -8,6 +10,6 @@ import java.util.TimerTask;
 public class TimedData extends TimerTask {
     @Override
     public void run() {
-        new BTConnection(Main.getDeviceToConnect());
+        new BTConnection(BluetoothUtil.getDeviceToConnect());
     }
 }
