@@ -1,6 +1,9 @@
 package com.mabezdev.MabezWatch.Activities;
 
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -19,6 +22,8 @@ import com.mabezdev.MabezWatch.Bluetooth.DeviceSave;
 import com.mabezdev.MabezWatch.R;
 import com.mabezdev.MabezWatch.Util.ObjectReader;
 import com.mabezdev.MabezWatch.myNotificationListener;
+
+import static android.R.attr.text;
 
 
 public class Main extends Activity {
@@ -121,7 +126,7 @@ public class Main extends Activity {
             @Override
             public void onClick(View v) {
                 filter.add(filterBox.getText().toString().toLowerCase());
-                Toast.makeText(getApplicationContext(),"Added filter for '"+filterBox.getText().toString()+"'", Toast.LENGTH_LONG);
+                Toast.makeText(getApplicationContext(),"Added filter for '"+filterBox.getText().toString()+"'", Toast.LENGTH_LONG).show();
                 filterBox.setText("");
             }
         });
@@ -150,15 +155,39 @@ public class Main extends Activity {
         enablePush.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.i("NOTICE","Requesting Push notifications");
+                /*Log.i("NOTICE","Requesting Push notifications");
                 Intent i = new Intent(NOTIFICATION_FILTER);
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 i.putExtra("command","list");
-                sendBroadcast(i);
+                sendBroadcast(i);*/
+                showNotification("The following text is over 128 chars: Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old.",
+                        Main.this);
             }
         });
 
 
+    }
+
+    private void showNotification(String eventtext, Context ctx) {
+
+
+
+        // Set the icon, scrolling text and timestamp
+        Notification notification = new Notification(R.drawable.ic_launcher,
+                "Du hello", System.currentTimeMillis());
+
+        // The PendingIntent to launch our activity if the user selects this
+        // notification
+        PendingIntent contentIntent = PendingIntent.getActivity(ctx, 0,
+                new Intent(ctx, Main.class), 0);
+
+        // Set the info for the views that show in the notification panel.
+        notification.setLatestEventInfo(ctx, "Title", eventtext,
+                contentIntent);
+
+        // Send the notification.
+        NotificationManager mng = (NotificationManager)ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+        mng.notify("Title", 0, notification);
     }
 
 

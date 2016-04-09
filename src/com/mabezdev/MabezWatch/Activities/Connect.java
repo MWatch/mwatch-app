@@ -73,9 +73,8 @@ public class Connect extends Activity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 for(BluetoothDevice d:pairedDevices){
                     if(d.getAddress().equals(BTArrayAdapter.getItem(position).split("\n")[1])){
-                        System.out.println("Found BT Device trying to connect");
-                        //start new service to keep in contact with watch in background
-                        BluetoothUtil.setChosenDevice(d);// set the device to connect to
+                        if(d==null) System.out.println("DEVICE NULL ON CHOICE");
+                        BluetoothUtil.setChosenMac(d.getAddress());
                         startService(new Intent(getBaseContext(),BTBGService.class));
 
                     }

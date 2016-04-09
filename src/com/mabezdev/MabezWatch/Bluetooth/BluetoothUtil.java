@@ -16,6 +16,7 @@ public class BluetoothUtil {
 
     private static BluetoothDevice chosenBT;
     private static Set<BluetoothDevice> pairedDevices;
+    private static String chosenMac;
 
     private BluetoothUtil(){
 
@@ -40,6 +41,14 @@ public class BluetoothUtil {
             }
         }
         return null;
+    }
+
+    public static void setChosenMac(String mac){
+        chosenMac = mac;
+    }
+
+    public static String getChosenMac(){
+        return chosenMac;
     }
 
     public static void setChosenDevice(BluetoothDevice b){
