@@ -118,8 +118,12 @@ public class BTBGService extends Service {
         }
     }
 
-    private String formatDateData(){
-        return DATE_TAG+ DateFormat.getDateTimeInstance().format(new Date())+END_TAG;
+    private String[] formatDateData(){
+        String[] date = new String[3];
+        date[0] = DATE_TAG;
+        date[1] = DateFormat.getDateTimeInstance().format(new Date());
+        date[2] = END_TAG;
+        return date;
     }
 
     public void disconnect(){//called upon service onDestroy
@@ -228,7 +232,7 @@ public class BTBGService extends Service {
                 Toast.makeText(getBaseContext(),"Connected!",Toast.LENGTH_SHORT).show();
                 isConnected = true;
                 Log.i(TAG,"Sending time to watch.");
-                write(formatDateData());
+                transmit(formatDateData());
             }
         }
     }
