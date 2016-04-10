@@ -1,7 +1,6 @@
 package com.mabezdev.MabezWatch.Bluetooth;
 
 import android.app.Service;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
@@ -9,17 +8,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 import com.mabezdev.MabezWatch.Activities.Main;
-
+import zh.wang.android.apis.yweathergetter4a.WeatherInfo;
+import zh.wang.android.apis.yweathergetter4a.YahooWeather;
+import zh.wang.android.apis.yweathergetter4a.YahooWeatherInfoListener;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Timer;
 import java.util.UUID;
 
 /**
@@ -30,6 +31,7 @@ public class BTBGService extends Service {
     private NotificationReceiver notificationReceiver;
     private final static String NOTIFICATION_TAG = "<n>";
     private final static String DATE_TAG = "<d>";
+    private final static String WEATHER_TAG = "<w>";
     private final static String TITLE_TAG = "<t>";
     private final static String DATA_INTERVAL_TAG = "<i>";
     private final static String CLOSE_TAG = "<e>";
@@ -44,6 +46,9 @@ public class BTBGService extends Service {
     private static UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
     private String[] data = null;
     private static final String TAG = "ASYNC_TRANSMIT";
+    private YahooWeatherInfoListener yahooWeatherInfoListener;
+    private YahooWeather yahooWeather;
+    private Handler weatherHandler;
 
     @Override
     public int onStartCommand(Intent i,int flags,int srtID){
@@ -54,12 +59,45 @@ public class BTBGService extends Service {
         filter.addAction(Main.NOTIFICATION_FILTER);
         registerReceiver(notificationReceiver,filter);
 
+        yahooWeatherInfoListener = new YahooWeatherInfoListener() {
+            @Override
+            public void gotWeatherInfo(WeatherInfo weatherInfo) {
+                if(weatherInfo!=null){
+                    //send data here as it is got once queried.
+                    Log.i("TEMPERATURE (C): ",Float.toString((weatherInfo.getCurrentTemp() - 32)/1.8f));
+                    for(WeatherInfo.ForecastInfo info: weatherInfo.getForecastInfoList()){
+                        Log.i(info.getForecastDay(),info.getForecastText());
+                    }
+
+                    data = formatWeatherData(weatherInfo.getForecastInfo1().getForecastDay(),
+                            String.format("%.2f", (weatherInfo.getCurrentTemp() - 32)/1.8f),
+                            weatherInfo.getForecastInfo1().getForecastText());
+                    new TransmitTask().execute();
+
+                }
+            }
+        };
+
+        yahooWeather = new YahooWeather();
+
+        weatherHandler = new Handler();
+        weatherHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                yahooWeather.queryYahooWeatherByGPS(getBaseContext(),yahooWeatherInfoListener);
+                weatherHandler.postDelayed(this,30000);//get new data every ... seconds.
+            }
+        },100);
+
+
+
+
         /*
         Here we need to handle connection of bluetooth device
         and handle reconnection and eventual shutdown of service after a number of timeouts
          */
 
-        //need to run a thread/async task or something to connect then run the transmition on a noew thread
+        //Async task to connect to device
         new ConnectBT().execute();
 
 
@@ -76,6 +114,18 @@ public class BTBGService extends Service {
                 e.printStackTrace();
             }
         }
+    }
+
+    private String[] formatWeatherData(String day,String temp,String forecast){
+        String[] data = new String[7];
+        data[0] = WEATHER_TAG;
+        data[1] = day;
+        data[2] = TITLE_TAG;
+        data[3] = temp;
+        data[4] = TITLE_TAG;
+        data[5] = forecast;
+        data[6] = END_TAG;
+        return data;
     }
 
     private String[] formatNotificationData(String pkg, String title, String text){
@@ -140,8 +190,6 @@ public class BTBGService extends Service {
                 outputStream.close();
                 socket.close();
                 socket=null;
-
-                return;
             } catch (IOException e) {
                 Log.e("EF-BTBee", "", e);
             }catch(NullPointerException e1){
@@ -243,7 +291,7 @@ public class BTBGService extends Service {
         @Override
         protected void onPreExecute()
         {
-            Log.i(TAG, "Transmitting Notification from package "+data[0]);
+            Log.i(TAG, "Transmitting data...");
         }
 
         @Override
