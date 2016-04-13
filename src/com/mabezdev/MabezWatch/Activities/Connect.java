@@ -59,56 +59,12 @@ public class Connect extends Activity {
             BluetoothUtil.turnOnBluetooth(myBluetoothAdapter);
         }
 
-        bluetoothHandler = new BluetoothHandler(Connect.this);
+        bluetoothHandler = new BluetoothHandler(this);
 
         setupUI();
-
-        setUpBTListeners();
     }
 
-    private void setUpBTListeners(){
-        bluetoothHandler.setOnConnectedListener(new BluetoothHandler.OnConnectedListener() {
-            @Override
-            public void onConnected(boolean isConnected) {
-                if (isConnected) {
-                    Log.i("TRANSMIT", "Connected.");
-                    deviceConnected = true;
-                    disconnectButton.setVisibility(View.VISIBLE);
 
-                } else {
-                    Log.i("TRANSMIT","Disconnected.");
-                }
-            }});
-        bluetoothHandler.setOnReadyForTransmissionListener(new BluetoothHandler.OnReadyForTransmissionListener() {
-            @Override
-            public void OnReady(boolean isReady){
-                if(isReady){
-                    //start our BTGBService here once we are ready to transmit
-                    // feed the handler to the service
-                    try{
-                        bluetoothHandler.sendData("<w>".getBytes());
-                        Thread.sleep(250);
-                        bluetoothHandler.sendData("Tue".getBytes());
-                        Thread.sleep(250);
-                        bluetoothHandler.sendData("<t>".getBytes());
-                        Thread.sleep(250);
-                        bluetoothHandler.sendData("42.3".getBytes());
-                        Thread.sleep(250);
-                        bluetoothHandler.sendData("<t>".getBytes());
-                        Thread.sleep(250);
-                        bluetoothHandler.sendData("Murballs".getBytes());
-                        Thread.sleep(250);
-                        bluetoothHandler.sendData("<f>".getBytes());
-                        Thread.sleep(250);
-
-                    } catch (InterruptedException e){
-
-                    }
-                }
-            }
-        });
-
-    }
 
     private void setupUI(){
         listBtn = (Button)findViewById(R.id.paired);
@@ -126,17 +82,6 @@ public class Connect extends Activity {
         disconnectButton = (Button) findViewById(R.id.disconnectButton);
         disconnectButton.setVisibility(View.INVISIBLE);
 
-        disconnectButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(deviceConnected) {
-                    bluetoothHandler.disconnect();
-                    deviceConnected = false;
-                    disconnectButton.setVisibility(View.INVISIBLE);
-                }
-            }
-        });
-
 
         myListView = (ListView)findViewById(R.id.listView1);
 
@@ -148,9 +93,9 @@ public class Connect extends Activity {
         myListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //close this bt handler as we just used it to scan it
                 BluetoothUtil.setChosenMac(BTArrayAdapter.getItem(position));
-                        //startService(new Intent(getBaseContext(),BTBGService.class));
-                bluetoothHandler.connect(BluetoothUtil.getChosenMac());
+                startService(new Intent(getBaseContext(),BTBGService.class));
             }
         });
         status = (TextView) findViewById(R.id.text);
@@ -206,8 +151,6 @@ public class Connect extends Activity {
             }
         }
     }
-
-
 
     public void off(){
         myBluetoothAdapter.disable();

@@ -3,6 +3,7 @@ package com.mabezdev.MabezWatch.Bluetooth;
 import java.util.List;
 import java.util.UUID;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -83,13 +84,14 @@ public class BluetoothHandler {
 
         if(!isSupportBle()){
             Toast.makeText(context, "your device not support BLE!", Toast.LENGTH_SHORT).show();
-            ((Connect)context).finish();
             return ;
         }
         // open bluetooth
         if (!getBluetoothAdapter().isEnabled()) {
             Intent mIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            ((Connect)context).startActivityForResult(mIntent, 1);
+            if(context instanceof Activity) {
+                ((Connect) context).startActivityForResult(mIntent, 1);
+            }
         }else{
             setEnabled(true);
         }
@@ -103,11 +105,11 @@ public class BluetoothHandler {
         mDeviceAddress = deviceAddress;
         Intent gattServiceIntent = new Intent(context, BLEService.class);
 
-        if(!((Connect)context).bindService(gattServiceIntent, mServiceConnection, ((Connect)context).BIND_AUTO_CREATE)){
+        if(!((BTBGService)context).bindService(gattServiceIntent, mServiceConnection, ((BTBGService)context).BIND_AUTO_CREATE)){
             System.out.println("bindService failed!");
         }
 
-        ((Connect)context).registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+        ((BTBGService)context).registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
         if (mBLEService != null) {
             final boolean result = mBLEService.connect(mDeviceAddress);
         }else{
@@ -131,7 +133,6 @@ public class BluetoothHandler {
             mBLEService = ((BLEService.LocalBinder) service).getService();
             if (!mBLEService.initialize()) {
                 Log.e("onServiceConnected", "Unable to initialize Bluetooth");
-                ((Connect) context).finish();
             }
             // Automatically connects to the device upon successful start-up initialization.
             mBLEService.connect(mDeviceAddress);
@@ -299,7 +300,7 @@ public class BluetoothHandler {
     public void onPause() {
         // TODO Auto-generated method stub
         if(mConnected){
-            ((Connect) context).unregisterReceiver(mGattUpdateReceiver);
+            ((BTBGService) context).unregisterReceiver(mGattUpdateReceiver);
         }
     }
 
@@ -307,7 +308,7 @@ public class BluetoothHandler {
         if(mConnected){
             //mDevListAdapter.clearDevice();
             //mDevListAdapter.notifyDataSetChanged();
-            ((Connect) context).unbindService(mServiceConnection);
+            ((BTBGService) context).unbindService(mServiceConnection);
             mBLEService = null;
             mConnected = false;
         }
@@ -316,7 +317,7 @@ public class BluetoothHandler {
     public void onResume(){
         if(!mConnected || mBLEService == null)
             return ;
-        ((Connect)context).registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+        ((BTBGService)context).registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
         if (mBLEService != null) {
             final boolean result = mBLEService.connect(mDeviceAddress);
             Log.d("registerReceiver", "Connect request result=" + result);
@@ -444,19 +445,6 @@ public class BluetoothHandler {
             for(byte b:scanRecord)
                 System.out.printf("%02X ", b);
             System.out.println("");
-
-            ((Connect)context).runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Message msg = new Message();
-                    BluetoothScanInfo info = new BluetoothScanInfo();
-                    info.device = device;
-                    info.rssi = rssi;
-                    info.scanRecord = scanRecord;
-                    msg.obj = info;
-                    mHandler.sendMessage(msg);
-                }
-            });
         }
     };
 

@@ -21,6 +21,7 @@ public class BluetoothUtil {
     private static BluetoothDevice chosenBT;
     private static Set<BluetoothDevice> pairedDevices;
     private static String chosenMac;
+    private static BluetoothHandler bthandler;
 
     private BluetoothUtil(){
 
@@ -91,5 +92,11 @@ public class BluetoothUtil {
     }
 
 
+    public static void setBluetoothHandler(BluetoothHandler bluetoothHandler) {
+        bthandler = bluetoothHandler;
+    }
 
+    public static BluetoothHandler getBluetoothHandler(){
+        return bthandler;
+    }
 }
