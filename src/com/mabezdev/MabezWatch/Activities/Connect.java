@@ -3,14 +3,18 @@ package com.mabezdev.MabezWatch.Activities;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.view.animation.TranslateAnimation;
 import android.widget.*;
 import com.mabezdev.MabezWatch.Bluetooth.BTBGService;
+import com.mabezdev.MabezWatch.Bluetooth.BluetoothHandler;
 import com.mabezdev.MabezWatch.Bluetooth.BluetoothUtil;
 import com.mabezdev.MabezWatch.Bluetooth.DeviceSave;
 import com.mabezdev.MabezWatch.R;
@@ -24,9 +28,11 @@ import java.util.Set;
 public class Connect extends Activity {
 
     private Button listBtn;
+    private Button searchBtn;
     private TextView status;
     private BluetoothAdapter myBluetoothAdapter;
     private Set<BluetoothDevice> pairedDevices;
+    private BluetoothHandler bluetoothHandler;
     private ListView myListView;
     private ArrayAdapter<String> BTArrayAdapter;
     private static BluetoothDevice chosenBT;
@@ -36,10 +42,12 @@ public class Connect extends Activity {
     public void onCreate(Bundle onSavedInstance){
         super.onCreate(onSavedInstance);
         setContentView(R.layout.connect);
-        setupUI();
 
+        BluetoothManager mng = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         // take an instance of BluetoothAdapter - Bluetooth radio
-        myBluetoothAdapter = BluetoothUtil.getDefaultAdapter();
+        myBluetoothAdapter = BluetoothUtil.getDefaultAdapter(mng);
+
+
         if(myBluetoothAdapter == null) {
             listBtn.setEnabled(false);
 
@@ -48,6 +56,9 @@ public class Connect extends Activity {
         } else {
             BluetoothUtil.turnOnBluetooth(myBluetoothAdapter);
         }
+
+        bluetoothHandler = new BluetoothHandler(Connect.this);
+        setupUI();
     }
 
     private void setupUI(){
@@ -71,18 +82,76 @@ public class Connect extends Activity {
         myListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                for(BluetoothDevice d:pairedDevices){
-                    if(d.getAddress().equals(BTArrayAdapter.getItem(position).split("\n")[1])){
-                        if(d==null) System.out.println("DEVICE NULL ON CHOICE");
-                        BluetoothUtil.setChosenMac(d.getAddress());
-                        startService(new Intent(getBaseContext(),BTBGService.class));
+                BluetoothUtil.setChosenMac(BTArrayAdapter.getItem(position));
+                        //startService(new Intent(getBaseContext(),BTBGService.class));
+                        bluetoothHandler.setOnConnectedListener(new BluetoothHandler.OnConnectedListener() {
+                            @Override
+                            public void onConnected(boolean isConnected) {
+                                if (isConnected) {
+                                    Log.i("TRANSMIT", "We are connected!");
+                                } else {
+                                    Log.i("TRANSMIT","Failed to connect.");
+                                }
+                        }});
 
-                    }
-                }
+                        bluetoothHandler.setOnReadyForTransmissionListener(new BluetoothHandler.OnReadyForTransmissionListener() {
+                            @Override
+                            public void OnReady(boolean isReady){
+                                if(isReady){
+                                    try{
+                                        bluetoothHandler.sendData("<w>".getBytes());
+                                        Thread.sleep(250);
+                                        bluetoothHandler.sendData("Tue".getBytes());
+                                        Thread.sleep(250);
+                                        bluetoothHandler.sendData("<t>".getBytes());
+                                        Thread.sleep(250);
+                                        bluetoothHandler.sendData("42.3".getBytes());
+                                        Thread.sleep(250);
+                                        bluetoothHandler.sendData("<t>".getBytes());
+                                        Thread.sleep(250);
+                                        bluetoothHandler.sendData("Murballs".getBytes());
+                                        Thread.sleep(250);
+                                        bluetoothHandler.sendData("<f>".getBytes());
+                                        Thread.sleep(250);
+
+                                    } catch (InterruptedException e){
+
+                                    }
+                                }
+                            }
+                        });
+
+                        //need to setup a ready to transmit listener after we have the service and characterist
+                        //then we can start our service to listen for notifications adn send them using this handler
+
+                        bluetoothHandler.connect(BluetoothUtil.getChosenMac());
 
             }
         });
         status = (TextView) findViewById(R.id.text);
+
+        searchBtn = (Button) findViewById(R.id.search);
+
+        bluetoothHandler.setOnScanListener(new BluetoothHandler.OnScanListener() {
+            @Override
+            public void onScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
+                BTArrayAdapter.add(device.getAddress());
+            }
+
+            @Override
+            public void onScanFinished() {
+
+            }
+        });
+
+        searchBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                bluetoothHandler.scanLeDevice(true);
+            }
+        });
+
+
 
     }
 

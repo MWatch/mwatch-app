@@ -1,8 +1,7 @@
 package com.mabezdev.MabezWatch.Bluetooth;
 
 import android.app.Service;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
+import android.bluetooth.*;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -37,18 +36,32 @@ public class BTBGService extends Service {
     private final static String CLOSE_TAG = "<e>";
     private final static String END_TAG = "<f>";
     private final static int CHUNK_SIZE = 64;
-    private BTConnection connection;
+    private final static int WEATHER_REFRESH_TIME = 30000;
     private boolean isConnected;
     private OutputStream outputStream;
     private BluetoothSocket socket;
     private BluetoothDevice btdev;
+    private BluetoothGatt bluetoothGatt;
+    private BluetoothGattCharacteristic characteristic;
     private int retries = 0;
-    private static UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
+    private static UUID serviceUUID = UUID.fromString("0000ffe0-0000-1000-8000-00805f9b34fb");
+    private static UUID characterUUID = UUID.fromString("0000ffe1-0000-1000-8000-00805f9b34fb");
+    private static UUID writeUUID = UUID.randomUUID();
     private String[] data = null;
     private static final String TAG = "ASYNC_TRANSMIT";
     private YahooWeatherInfoListener yahooWeatherInfoListener;
     private YahooWeather yahooWeather;
     private Handler weatherHandler;
+
+    /*
+    BLE HM-11 SERVICES:
+
+    0000ffe0-0000-1000-8000-00805f9b34fb
+
+    BLE HM-11 CHARACTERISTICS:
+
+    0000ffe1-0000-1000-8000-00805f9b34fb
+     */
 
     @Override
     public int onStartCommand(Intent i,int flags,int srtID){
@@ -59,6 +72,7 @@ public class BTBGService extends Service {
         filter.addAction(Main.NOTIFICATION_FILTER);
         registerReceiver(notificationReceiver,filter);
 
+        //init data listener
         yahooWeatherInfoListener = new YahooWeatherInfoListener() {
             @Override
             public void gotWeatherInfo(WeatherInfo weatherInfo) {
@@ -70,24 +84,19 @@ public class BTBGService extends Service {
                     }
 
                     data = formatWeatherData(weatherInfo.getForecastInfo1().getForecastDay(),
-                            String.format("%.2f", (weatherInfo.getCurrentTemp() - 32)/1.8f),
+                            String.format("%.2f", (weatherInfo.getCurrentTemp() - 32) / 1.8f),
                             weatherInfo.getForecastInfo1().getForecastText());
                     new TransmitTask().execute();
-
                 }
             }
         };
 
+        //init weather client
         yahooWeather = new YahooWeather();
 
+
         weatherHandler = new Handler();
-        weatherHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                yahooWeather.queryYahooWeatherByGPS(getBaseContext(),yahooWeatherInfoListener);
-                weatherHandler.postDelayed(this,30000);//get new data every ... seconds.
-            }
-        },100);
+        weatherHandler.postDelayed(weatherRunnable,15000); //wait for device to connect before trying the first time
 
 
 
@@ -98,7 +107,9 @@ public class BTBGService extends Service {
          */
 
         //Async task to connect to device
-        new ConnectBT().execute();
+        //new ConnectBT().execute();
+
+        Log.i(TAG,"IN START");
 
 
         return START_STICKY;
@@ -115,6 +126,18 @@ public class BTBGService extends Service {
             }
         }
     }
+
+    private Runnable weatherRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if(isConnected) {
+                yahooWeather.queryYahooWeatherByGPS(getBaseContext(), yahooWeatherInfoListener);
+            } else {
+                Log.i("WEATHER", "NOT QUERYING AS DEVICE IS NOT CONNECTED");
+            }
+            weatherHandler.postDelayed(this, WEATHER_REFRESH_TIME);//get new data every ... seconds.
+        }
+    };
 
     private String[] formatWeatherData(String day,String temp,String forecast){
         String[] data = new String[7];
@@ -151,21 +174,53 @@ public class BTBGService extends Service {
             format.add(DATA_INTERVAL_TAG+text);
         }
         format.add(END_TAG);
-        temp ="";
-        for(String item: format){
-            temp+=item;
-        }
-        System.out.println("Sending: "+temp);
         return format.toArray(new String[format.size()]);
     }
 
-    public void write(String data){
+    private void write(String data){
         try {
-            outputStream.write(data.getBytes());
-            outputStream.flush();
+            if(outputStream!=null) {
+                outputStream.write(data.getBytes());
+                //push data
+                outputStream.flush();
+            } else {
+                throw new IOException("Forced IO when Stream is null");
+            }
         }catch (IOException e){
             e.printStackTrace();
+            //kill thread
+            stopSelf();
         }
+    }
+
+    //todo need to get services from gatt and characteristic stuff do it tommorrow
+
+    public boolean writeCharacteristic(){
+
+        //check mBluetoothGatt is available
+        if (bluetoothGatt == null) {
+            Log.e(TAG, "lost connection");
+            return false;
+        }
+        //get first service found
+        BluetoothGattService Service = bluetoothGatt.getService(serviceUUID);
+        if (Service == null) {
+            Log.e(TAG, "service not found!");
+            return false;
+        }
+        //get first characteristic
+        BluetoothGattCharacteristic charac = Service
+                .getCharacteristic(characterUUID);
+        if (charac == null) {
+            Log.e(TAG, "char not found!");
+            return false;
+        }
+
+        byte[] value = new byte[1];
+        value[0] = (byte) (21 & 0xFF);
+        charac.setValue(value);
+        boolean status = bluetoothGatt.writeCharacteristic(charac);
+        return status;
     }
 
     private String[] formatDateData(){
@@ -176,7 +231,7 @@ public class BTBGService extends Service {
         return date;
     }
 
-    public void disconnect(){//called upon service onDestroy
+    private void disconnect(){//called upon service onDestroy
         if (socket != null) {
             try {
                 Log.d("EF-BTBee", ">>Client Close");
@@ -190,6 +245,11 @@ public class BTBGService extends Service {
                 outputStream.close();
                 socket.close();
                 socket=null;
+
+                if(isConnected){
+                    Toast.makeText(this,"BT Device disconnected",Toast.LENGTH_SHORT).show();
+                    isConnected = false;
+                }
             } catch (IOException e) {
                 Log.e("EF-BTBee", "", e);
             }catch(NullPointerException e1){
@@ -209,8 +269,13 @@ public class BTBGService extends Service {
     public void onDestroy(){
         System.out.println("Stopping BTBGService");
         disconnect();
-        Toast.makeText(this,"BT Device disconnected",Toast.LENGTH_LONG).show();
-        unregisterReceiver(notificationReceiver);
+        try {
+            unregisterReceiver(notificationReceiver);
+        } catch (Exception e){
+            Log.i(TAG,"Notification Receiver was never registered therefore cannot be unregistered.");
+        }
+        weatherHandler.removeCallbacks(weatherRunnable);
+        weatherHandler = null;
         super.onDestroy();
     }
 
@@ -233,9 +298,48 @@ public class BTBGService extends Service {
         }
     }
 
+    private final BluetoothGattCallback myGattCallback = new BluetoothGattCallback() {
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                Log.i(TAG, "Connected to GATT server.");
+                // Attempts to discover services after successful connection.
+                Log.i(TAG, "Attempting to start service discovery:" +
+                        bluetoothGatt.discoverServices());
+
+                //todo found problem we are not discovering the services therfore we cant do anything
+                for(BluetoothGattService s : bluetoothGatt.getServices()){
+                    Log.i(TAG,"Service found with UUID: "+s.getUuid().toString());
+                }
+                isConnected = true;
+                Log.i(TAG,"We just set isConnected to True");
+                if(writeCharacteristic()) Log.i(TAG,"SUCCESS");
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                Log.i(TAG,"Not connected.");
+                isConnected = false;
+            }
+        }
+
+        @Override
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicWrite(gatt, characteristic, status);
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+
+            super.onCharacteristicRead(gatt, characteristic, status);
+        }
+
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            super.onServicesDiscovered(gatt, status);
+        }
+    };
+
     private class ConnectBT extends AsyncTask<Void, Void, Void>  // UI thread
     {
-        private boolean ConnectSuccess = true; //if it's here, it's almost connected
+        private boolean ConnectSuccess = false; //if it's here, it's almost connected
 
         @Override
         protected void onPreExecute()
@@ -246,24 +350,22 @@ public class BTBGService extends Service {
         @Override
         protected Void doInBackground(Void... devices) //while the progress dialog is shown, the connection is done in background
         {
-            try
-            {
                 if (socket == null || !isConnected)
                 {
-                    btdev = BluetoothUtil.getDeviceFromAddress(BluetoothUtil.getChosenMac(),
-                            BluetoothUtil.getDefaultAdapter());
-                    if (btdev != null) {
+                    BluetoothManager mng = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+                    //no clue why this is null
+                    Log.i(TAG, "Address: "+BluetoothUtil.getChosenMac());
+                    btdev = BluetoothUtil.getDefaultAdapter(mng).getRemoteDevice(BluetoothUtil.getChosenMac()); //temp just using our mac
+                    bluetoothGatt = btdev.connectGatt(BTBGService.this, false, myGattCallback);
+
+                    /*if (btdev != null) {
                         socket = btdev.createInsecureRfcommSocketToServiceRecord(myUUID);
-                    }
-                    socket.connect();//start connection
-                    outputStream = socket.getOutputStream();
+                        socket.connect();//start connection
+                        outputStream = socket.getOutputStream();
+                    }*/
+
                 }
-            }
-            catch (IOException e)
-            {
-                ConnectSuccess = false;//if the try failed, you can check the exception here
-                e.printStackTrace();
-            }
+
             return null;
         }
         @Override
@@ -273,14 +375,15 @@ public class BTBGService extends Service {
 
             if (!ConnectSuccess)
             {
-                Toast.makeText(getBaseContext(),"Failed to connect retry!",Toast.LENGTH_SHORT).show();
+                Toast.makeText(getBaseContext(),"Failed to connect, retry!",Toast.LENGTH_SHORT).show();
+                Log.i(TAG,"Failed to connect, killing service");
                 BTBGService.this.stopSelf();// kill the service
             }
             else {
                 Toast.makeText(getBaseContext(),"Connected!",Toast.LENGTH_SHORT).show();
                 isConnected = true;
                 Log.i(TAG,"Sending time to watch.");
-                transmit(formatDateData());
+                //transmit(formatDateData());
             }
         }
     }

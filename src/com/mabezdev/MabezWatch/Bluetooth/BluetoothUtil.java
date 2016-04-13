@@ -2,7 +2,9 @@ package com.mabezdev.MabezWatch.Bluetooth;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.content.Intent;
+import android.util.Log;
 import android.widget.Toast;
 import com.mabezdev.MabezWatch.Activities.Main;
 import com.mabezdev.MabezWatch.Util.ObjectWriter;
@@ -13,6 +15,8 @@ import java.util.Set;
  * Created by Mabez on 19/03/2016.
  */
 public class BluetoothUtil {
+
+    //todo NOW USING HM-11 BLE need to implement connecting via ble
 
     private static BluetoothDevice chosenBT;
     private static Set<BluetoothDevice> pairedDevices;
@@ -27,8 +31,13 @@ public class BluetoothUtil {
         return pairedDevices;
     }
 
+    @Deprecated
     public static BluetoothAdapter getDefaultAdapter(){
         return BluetoothAdapter.getDefaultAdapter();
+    }
+
+    public static BluetoothAdapter getDefaultAdapter(BluetoothManager mng){
+        return mng.getAdapter();
     }
 
     public static BluetoothDevice getDeviceFromAddress(String address, BluetoothAdapter bluetoothAdapter){
@@ -44,6 +53,7 @@ public class BluetoothUtil {
     }
 
     public static void setChosenMac(String mac){
+        Log.i("UTIL","Setting mac: "+mac);
         chosenMac = mac;
     }
 
