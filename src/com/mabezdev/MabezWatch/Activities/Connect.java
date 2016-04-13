@@ -29,6 +29,7 @@ public class Connect extends Activity {
 
     private Button listBtn;
     private Button searchBtn;
+    private Button disconnectButton;
     private TextView status;
     private BluetoothAdapter myBluetoothAdapter;
     private Set<BluetoothDevice> pairedDevices;
@@ -37,6 +38,7 @@ public class Connect extends Activity {
     private ArrayAdapter<String> BTArrayAdapter;
     private static BluetoothDevice chosenBT;
     private static final int REQUEST_ENABLE_BT = 1;
+    private boolean deviceConnected = false;
 
     @Override
     public void onCreate(Bundle onSavedInstance){
@@ -58,7 +60,54 @@ public class Connect extends Activity {
         }
 
         bluetoothHandler = new BluetoothHandler(Connect.this);
+
         setupUI();
+
+        setUpBTListeners();
+    }
+
+    private void setUpBTListeners(){
+        bluetoothHandler.setOnConnectedListener(new BluetoothHandler.OnConnectedListener() {
+            @Override
+            public void onConnected(boolean isConnected) {
+                if (isConnected) {
+                    Log.i("TRANSMIT", "Connected.");
+                    deviceConnected = true;
+                    disconnectButton.setVisibility(View.VISIBLE);
+
+                } else {
+                    Log.i("TRANSMIT","Disconnected.");
+                }
+            }});
+        bluetoothHandler.setOnReadyForTransmissionListener(new BluetoothHandler.OnReadyForTransmissionListener() {
+            @Override
+            public void OnReady(boolean isReady){
+                if(isReady){
+                    //start our BTGBService here once we are ready to transmit
+                    // feed the handler to the service
+                    try{
+                        bluetoothHandler.sendData("<w>".getBytes());
+                        Thread.sleep(250);
+                        bluetoothHandler.sendData("Tue".getBytes());
+                        Thread.sleep(250);
+                        bluetoothHandler.sendData("<t>".getBytes());
+                        Thread.sleep(250);
+                        bluetoothHandler.sendData("42.3".getBytes());
+                        Thread.sleep(250);
+                        bluetoothHandler.sendData("<t>".getBytes());
+                        Thread.sleep(250);
+                        bluetoothHandler.sendData("Murballs".getBytes());
+                        Thread.sleep(250);
+                        bluetoothHandler.sendData("<f>".getBytes());
+                        Thread.sleep(250);
+
+                    } catch (InterruptedException e){
+
+                    }
+                }
+            }
+        });
+
     }
 
     private void setupUI(){
@@ -68,6 +117,23 @@ public class Connect extends Activity {
             @Override
             public void onClick(View v) {
                 list(v);
+            }
+        });
+
+        //todo remvoe this button completely s were never gunna use it
+        listBtn.setVisibility(View.INVISIBLE);
+
+        disconnectButton = (Button) findViewById(R.id.disconnectButton);
+        disconnectButton.setVisibility(View.INVISIBLE);
+
+        disconnectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(deviceConnected) {
+                    bluetoothHandler.disconnect();
+                    deviceConnected = false;
+                    disconnectButton.setVisibility(View.INVISIBLE);
+                }
             }
         });
 
@@ -84,48 +150,7 @@ public class Connect extends Activity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 BluetoothUtil.setChosenMac(BTArrayAdapter.getItem(position));
                         //startService(new Intent(getBaseContext(),BTBGService.class));
-                        bluetoothHandler.setOnConnectedListener(new BluetoothHandler.OnConnectedListener() {
-                            @Override
-                            public void onConnected(boolean isConnected) {
-                                if (isConnected) {
-                                    Log.i("TRANSMIT", "We are connected!");
-                                } else {
-                                    Log.i("TRANSMIT","Failed to connect.");
-                                }
-                        }});
-
-                        bluetoothHandler.setOnReadyForTransmissionListener(new BluetoothHandler.OnReadyForTransmissionListener() {
-                            @Override
-                            public void OnReady(boolean isReady){
-                                if(isReady){
-                                    try{
-                                        bluetoothHandler.sendData("<w>".getBytes());
-                                        Thread.sleep(250);
-                                        bluetoothHandler.sendData("Tue".getBytes());
-                                        Thread.sleep(250);
-                                        bluetoothHandler.sendData("<t>".getBytes());
-                                        Thread.sleep(250);
-                                        bluetoothHandler.sendData("42.3".getBytes());
-                                        Thread.sleep(250);
-                                        bluetoothHandler.sendData("<t>".getBytes());
-                                        Thread.sleep(250);
-                                        bluetoothHandler.sendData("Murballs".getBytes());
-                                        Thread.sleep(250);
-                                        bluetoothHandler.sendData("<f>".getBytes());
-                                        Thread.sleep(250);
-
-                                    } catch (InterruptedException e){
-
-                                    }
-                                }
-                            }
-                        });
-
-                        //need to setup a ready to transmit listener after we have the service and characterist
-                        //then we can start our service to listen for notifications adn send them using this handler
-
-                        bluetoothHandler.connect(BluetoothUtil.getChosenMac());
-
+                bluetoothHandler.connect(BluetoothUtil.getChosenMac());
             }
         });
         status = (TextView) findViewById(R.id.text);

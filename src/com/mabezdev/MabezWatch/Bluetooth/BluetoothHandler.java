@@ -417,6 +417,14 @@ public class BluetoothHandler {
         }
     }
 
+    public void disconnect(){
+        if(onConnectedListener!=null){
+            onConnectedListener.onConnected(false);
+        }
+        mBLEService.disconnect();
+        mBLEService.close();
+    }
+
     public boolean isScanning(){
         return mScanning;
     }
