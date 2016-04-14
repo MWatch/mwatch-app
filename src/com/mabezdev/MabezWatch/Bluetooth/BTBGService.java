@@ -37,8 +37,8 @@ public class BTBGService extends Service {
     private final static String DATA_INTERVAL_TAG = "<i>";
     private final static String CLOSE_TAG = "<e>";
     private final static String END_TAG = "<f>";
-    private final static int CHUNK_SIZE = 64;
-    private final static int WEATHER_REFRESH_TIME = 30000;
+    private final static int CHUNK_SIZE = 64; //64 bytes of data
+    private final static int WEATHER_REFRESH_TIME = 900000; // 15 mins
     private int retries = 0;
     private String[] data = null;
     private boolean isConnected = false;
@@ -83,6 +83,17 @@ public class BTBGService extends Service {
                     BTBGService.this.isConnected = false;
                 }
             }});
+
+        bluetoothHandler.setOnReadyForTransmissionListener(new BluetoothHandler.OnReadyForTransmissionListener() {
+            @Override
+            public void OnReady(boolean isReady) {
+                // all data that needs to be sent at the start done here
+                yahooWeather.queryYahooWeatherByGPS(BTBGService.this,yahooWeatherInfoListener);
+
+                data = formatDateData();
+                new TransmitTask().execute();
+            }
+        });
 
 
         //init data listener

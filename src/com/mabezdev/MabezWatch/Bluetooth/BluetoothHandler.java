@@ -297,6 +297,13 @@ public class BluetoothHandler {
         }*/
     }
 
+    public void close(){
+        // kill service
+        mBLEService.close();
+        //todo unreg recievers etc
+        context.unregisterReceiver(mGattUpdateReceiver);
+    }
+
     public void onPause() {
         // TODO Auto-generated method stub
         if(mConnected){

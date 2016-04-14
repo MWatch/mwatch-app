@@ -94,6 +94,8 @@ public class Connect extends Activity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 //close this bt handler as we just used it to scan it
+                //bluetoothHandler.close();
+                //bluetoothHandler = null;
                 BluetoothUtil.setChosenMac(BTArrayAdapter.getItem(position));
                 startService(new Intent(getBaseContext(),BTBGService.class));
             }

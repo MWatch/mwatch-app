@@ -1,5 +1,6 @@
 package com.mabezdev.MabezWatch;
 
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +11,8 @@ import android.service.notification.StatusBarNotification;
 import android.util.Log;
 import com.mabezdev.MabezWatch.Activities.Main;
 
+import java.util.ArrayList;
+
 /**
  * Created by Mabez on 03/03/2016.
  */
@@ -17,35 +20,54 @@ public class myNotificationListener extends NotificationListenerService {
 
     private NLServiceReceiver nlservicereciver;
     //private final IBinder mBinder = new LocalBinder();
+    private ArrayList<String> packageFilter = new ArrayList<String>();
 
     @Override
     public void onCreate(){
         super.onCreate();
-        Log.i("NOTICE","Started Notification Service");
+        Log.i("NOTIFICATION_SERVICE","Started Notification Service");
         nlservicereciver = new NLServiceReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction(Main.NOTIFICATION_FILTER);
         registerReceiver(nlservicereciver,filter);
+
+        //stop system crap
+        packageFilter.add("android");
+    }
+
+    @Override
+    public void onDestroy() {
+        unregisterReceiver(nlservicereciver);
+        super.onDestroy();
     }
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        //works perfectly
+
+        //todo check EXTRA_BIG_TEXT, EXTRA_TEXT,EXTRA_TEXT,EXTRA_TEXT_LINES and all other possibles to get all the data we can
         Intent sendNewToApp = new Intent(Main.NOTIFICATION_FILTER);
         Bundle extras = sbn.getNotification().extras;
-        sendNewToApp.putExtra("PKG",sbn.getPackageName());
-        sendNewToApp.putExtra("TITLE",extras.getString("android.title"));
-        if(extras.getCharSequence("android.text")!=null){
-            sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.text").toString());
+        if(!packageFilter.contains(sbn.getPackageName()) && sbn.isClearable()) {
+            sendNewToApp.putExtra("PKG", sbn.getPackageName());
+            if(extras.getString("android.title")!=null) {
+                sendNewToApp.putExtra("TITLE", extras.getString("android.title"));
+            } else {
+                sendNewToApp.putExtra("TITLE", sbn.getNotification().tickerText.toString());
+            }
+            if (extras.getCharSequence("android.text") != null) {
+                sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.text").toString());
+            } else {
+                sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.textLines").toString());
+            }
+            sendBroadcast(sendNewToApp);
         } else {
-            sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.textLines").toString());
+            Log.i("NOTIFICATION_SERVICE","Not pushing notification with package name: "+sbn.getPackageName());
         }
-        sendBroadcast(sendNewToApp);
     }
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
-        Log.i("NOT","SOMETHING REMOVED");
+        Log.i("NOTIFICATION_SERVICE","Notification Removed.");
     }
 
 
