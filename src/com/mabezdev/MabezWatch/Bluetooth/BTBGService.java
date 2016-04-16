@@ -20,9 +20,7 @@ import zh.wang.android.apis.yweathergetter4a.YahooWeatherInfoListener;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.DateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Created by Scott on 09/09/2015.
@@ -38,7 +36,7 @@ public class BTBGService extends Service {
     private final static String CLOSE_TAG = "<e>";
     private final static String END_TAG = "<f>";
     private final static int CHUNK_SIZE = 64; //64 bytes of data
-    private final static int WEATHER_REFRESH_TIME = 900000; // 15 mins
+    private final static int WEATHER_REFRESH_TIME = 300000; // 5 mins
     private int retries = 0;
     private String[] data = null;
     private boolean isConnected = false;
@@ -46,7 +44,10 @@ public class BTBGService extends Service {
     private YahooWeatherInfoListener yahooWeatherInfoListener;
     private YahooWeather yahooWeather;
     private Handler weatherHandler;
+    private Handler queueHandler;
     private BluetoothHandler bluetoothHandler;
+    private Queue<String[]> transmitQueue;
+    private boolean isTransmitting;
 
     /*
     BLE HM-11 SERVICES:
@@ -60,6 +61,8 @@ public class BTBGService extends Service {
 
     @Override
     public int onStartCommand(Intent i,int flags,int srtID){
+
+        transmitQueue = new LinkedList<String[]>();
 
         //register our receiver to listen to our other service
         notificationReceiver = new NotificationReceiver();
@@ -90,8 +93,7 @@ public class BTBGService extends Service {
                 // all data that needs to be sent at the start done here
                 yahooWeather.queryYahooWeatherByGPS(BTBGService.this,yahooWeatherInfoListener);
 
-                data = formatDateData();
-                new TransmitTask().execute();
+                transmitQueue.add(formatDateData());
             }
         });
 
@@ -106,11 +108,9 @@ public class BTBGService extends Service {
                     for(WeatherInfo.ForecastInfo info: weatherInfo.getForecastInfoList()){
                         Log.i(info.getForecastDay(),info.getForecastText());
                     }
-
-                    data = formatWeatherData(weatherInfo.getForecastInfo1().getForecastDay(),
+                    transmitQueue.add(formatWeatherData(weatherInfo.getForecastInfo1().getForecastDay(),
                             String.format("%.2f", (weatherInfo.getCurrentTemp() - 32) / 1.8f),
-                            weatherInfo.getForecastInfo1().getForecastText());
-                    new TransmitTask().execute();
+                            weatherInfo.getForecastInfo1().getForecastText()));
                 }
             }
         };
@@ -122,13 +122,16 @@ public class BTBGService extends Service {
         weatherHandler = new Handler();
         weatherHandler.postDelayed(weatherRunnable,15000); //wait for device to connect before trying the first time
 
-        Log.i(TAG,"IN START");
+        queueHandler = new Handler();
+        queueHandler.postDelayed(queueRunnable,500);
+
+        Log.i(TAG,"BTBG service initialized.");
 
 
         return START_STICKY;
     }
 
-    public void transmit(String[] formattedData){
+    private void transmit(String[] formattedData){
         //delay between each statement it received individual
         for(int i=0; i < formattedData.length; i++){
             //write(formattedData[i]);
@@ -147,9 +150,23 @@ public class BTBGService extends Service {
             if(isConnected) {//change
                 yahooWeather.queryYahooWeatherByGPS(getBaseContext(), yahooWeatherInfoListener);
             } else {
-                Log.i("WEATHER", "NOT QUERYING AS DEVICE IS NOT CONNECTED");
+                Log.i("WEATHER", "Not querying as the device is not connected.");
             }
-            weatherHandler.postDelayed(this, WEATHER_REFRESH_TIME);//get new data every ... seconds.
+            weatherHandler.postDelayed(this, WEATHER_REFRESH_TIME);//get new data every @WEATHER_REFRESH_TIME seconds.
+        }
+    };
+
+    private Runnable queueRunnable = new Runnable() {
+        @Override
+        public void run() {
+            //check the queue if it has data
+            if(!transmitQueue.isEmpty()){
+                if(!isTransmitting) { //wait till we are not transmitting
+                    data = transmitQueue.poll();//remove from queue and put it here
+                    new TransmitTask().execute();
+                }
+            }
+            queueHandler.postDelayed(this, 1000);
         }
     };
 
@@ -214,12 +231,15 @@ public class BTBGService extends Service {
         } catch (Exception e){
             Log.i(TAG,"Notification Receiver was never registered therefore cannot be unregistered.");
         }
+        queueHandler.removeCallbacks(queueRunnable);
+        queueHandler = null;
         weatherHandler.removeCallbacks(weatherRunnable);
         weatherHandler = null;
         if(isConnected){
             bluetoothHandler.disconnect();
         }
         bluetoothHandler = null;
+
         super.onDestroy();
     }
 
@@ -236,9 +256,8 @@ public class BTBGService extends Service {
             String pkgName = intent.getStringExtra("PKG");
             String title = intent.getStringExtra("TITLE");
             String text = intent.getStringExtra("TEXT");
-            //now package this up and transmit
-            data = formatNotificationData(pkgName,title,text);
-            new TransmitTask().execute();
+            //now package this up and add tot he transmit queue
+            transmitQueue.add(formatNotificationData(pkgName,title,text));
         }
     }
 
@@ -248,6 +267,7 @@ public class BTBGService extends Service {
         @Override
         protected void onPreExecute()
         {
+            isTransmitting = true;
             Log.i(TAG, "Transmitting data...");
         }
 
@@ -261,6 +281,7 @@ public class BTBGService extends Service {
         protected void onPostExecute(Void result) //after the doInBackground, it checks if everything went fine
         {
             super.onPostExecute(result);
+            isTransmitting = false;
             Log.i(TAG,"Transmission complete.");
         }
     }

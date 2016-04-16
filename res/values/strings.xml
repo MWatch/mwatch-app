@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">BluetoothTest</string>
+    <string name="app_name">MabezWatch</string>
     <string name="action_settings">Settings</string>
     <string name="Text">Status: -</string>
     <string name="on">Turn On</string>

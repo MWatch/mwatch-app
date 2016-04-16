@@ -15,6 +15,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="yahoo_weather" exported="" />
+    <orderEntry type="module" module-name="yahoo_weather" />
+    <orderEntry type="module" module-name="library_project" exported="" />
   </component>
 </module>

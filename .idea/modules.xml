@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/SmartWatch-Phone.iml" filepath="$PROJECT_DIR$/SmartWatch-Phone.iml" />
+      <module fileurl="file://$PROJECT_DIR$/libs/YWeatherGetter4a-master/library_project/library_project.iml" filepath="$PROJECT_DIR$/libs/YWeatherGetter4a-master/library_project/library_project.iml" />
       <module fileurl="file://$USER_HOME$/Android Development/YWeatherGetter4a-master/library_project/yahoo_weather.iml" filepath="$USER_HOME$/Android Development/YWeatherGetter4a-master/library_project/yahoo_weather.iml" />
     </modules>
   </component>
