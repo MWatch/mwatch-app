@@ -33,6 +33,7 @@ public class myNotificationListener extends NotificationListenerService {
 
         //stop system crap
         packageFilter.add("android");
+        packageFilter.add("mabezdev");
     }
 
     @Override

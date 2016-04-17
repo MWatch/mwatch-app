@@ -19,7 +19,6 @@ import com.mabezdev.MabezWatch.Bluetooth.BluetoothUtil;
 import com.mabezdev.MabezWatch.Bluetooth.DeviceSave;
 import com.mabezdev.MabezWatch.R;
 import com.mabezdev.MabezWatch.Util.ObjectWriter;
-
 import java.util.Set;
 
 /**

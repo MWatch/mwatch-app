@@ -170,8 +170,6 @@ public class Main extends Activity {
 
     private void showNotification(String eventtext, Context ctx) {
 
-
-
         // Set the icon, scrolling text and timestamp
         Notification notification = new Notification(R.drawable.ic_launcher,
                 "Du hello", System.currentTimeMillis());

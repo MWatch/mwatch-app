@@ -1,7 +1,9 @@
 package com.mabezdev.MabezWatch.Bluetooth;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
-import android.bluetooth.*;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -9,16 +11,14 @@ import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
-import com.mabezdev.MabezWatch.Activities.Connect;
 import com.mabezdev.MabezWatch.Activities.Main;
+import com.mabezdev.MabezWatch.R;
 import zh.wang.android.apis.yweathergetter4a.WeatherInfo;
 import zh.wang.android.apis.yweathergetter4a.YahooWeather;
 import zh.wang.android.apis.yweathergetter4a.YahooWeatherInfoListener;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.text.DateFormat;
 import java.util.*;
 
@@ -48,6 +48,7 @@ public class BTBGService extends Service {
     private BluetoothHandler bluetoothHandler;
     private Queue<String[]> transmitQueue;
     private boolean isTransmitting;
+    private static final int notificationID = 1234;
 
     /*
     BLE HM-11 SERVICES:
@@ -62,6 +63,8 @@ public class BTBGService extends Service {
     @Override
     public int onStartCommand(Intent i,int flags,int srtID){
 
+        Log.i(TAG,"BTBG service initialized.");
+
         transmitQueue = new LinkedList<String[]>();
 
         //register our receiver to listen to our other service
@@ -72,7 +75,6 @@ public class BTBGService extends Service {
 
         //init bt handler
         bluetoothHandler = new BluetoothHandler(this);
-        bluetoothHandler.connect(BluetoothUtil.getChosenMac());
 
         bluetoothHandler.setOnConnectedListener(new BluetoothHandler.OnConnectedListener() {
             @Override
@@ -80,10 +82,13 @@ public class BTBGService extends Service {
                 if (isConnected) {
                     Log.i("TRANSMIT", "Connected.");
                     BTBGService.this.isConnected = true;
+                    showNotification("Connected to MabezWatch ("+BluetoothUtil.getChosenMac()+").");
 
                 } else {
                     Log.i("TRANSMIT","Disconnected.");
                     BTBGService.this.isConnected = false;
+                    showNotification("Disconnected from MabezWatch.");
+                    stopSelf();
                 }
             }});
 
@@ -125,10 +130,27 @@ public class BTBGService extends Service {
         queueHandler = new Handler();
         queueHandler.postDelayed(queueRunnable,500);
 
-        Log.i(TAG,"BTBG service initialized.");
-
+        bluetoothHandler.connect(BluetoothUtil.getChosenMac());
 
         return START_STICKY;
+    }
+
+    private void showNotification(String eventText) {
+        // Set the icon, scrolling text and timestamp
+        Notification notification = new Notification(R.drawable.ic_launcher,
+                "MabezWatch", System.currentTimeMillis());
+
+        // The PendingIntent to launch our activity if the user selects this
+        // notification
+        PendingIntent contentIntent = PendingIntent.getActivity(BTBGService.this, 0,
+                new Intent(BTBGService.this, Main.class), 0);
+
+        // Set the info for the views that show in the notification panel.
+        notification.setLatestEventInfo(BTBGService.this, "MabezWatch", eventText,
+                contentIntent);
+        // Send the notification.
+        NotificationManager mng = (NotificationManager)BTBGService.this.getSystemService(Context.NOTIFICATION_SERVICE);
+        mng.notify("Title", notificationID, notification);
     }
 
     private void transmit(String[] formattedData){
@@ -209,6 +231,7 @@ public class BTBGService extends Service {
     }
 
     private String[] formatDateData(){
+        //send each part separately?
         String[] date = new String[3];
         date[0] = DATE_TAG;
         date[1] = DateFormat.getDateTimeInstance().format(new Date());
@@ -237,7 +260,9 @@ public class BTBGService extends Service {
         weatherHandler = null;
         if(isConnected){
             bluetoothHandler.disconnect();
+            Toast.makeText(BTBGService.this, "Disconnected.", Toast.LENGTH_SHORT).show();
         }
+        bluetoothHandler.close();
         bluetoothHandler = null;
 
         super.onDestroy();
