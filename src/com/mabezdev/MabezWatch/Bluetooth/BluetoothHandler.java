@@ -41,14 +41,12 @@ public class BluetoothHandler {
     private OnReadyForTransmissionListener onReadyForTransmissionListener;
 
     private List<BluetoothGattService> gattServices = null;
-    private UUID targetServiceUuid =
-            UUID.fromString("0000ffe0-0000-1000-8000-00805f9b34fb");//cahnged this to ours
-    private UUID targetCharacterUuid =
-            UUID.fromString("0000ffe1-0000-1000-8000-00805f9b34fb");//cahnged to our one for hm11
+    private UUID targetServiceUuid = UUID.fromString("0000ffe0-0000-1000-8000-00805f9b34fb");//cahnged this to ours
+    private UUID targetCharacterUuid = UUID.fromString("0000ffe1-0000-1000-8000-00805f9b34fb");
     private UUID readUUID =
             UUID.fromString("0000fff4-0000-1000-8000-00805f9b34fb");
     private BluetoothGattCharacteristic targetGattCharacteristic = null;
-
+    // 00001800-0000-1000-8000-00805f9b34fb service test
     private Context context;
 
     public interface OnRecievedDataListener{
@@ -197,16 +195,18 @@ public class BluetoothHandler {
         // get target gattservice
         for (BluetoothGattService gattService : gattServices) {
             uuid = gattService.getUuid().toString();
-            Log.i("HELLO",uuid);
+            Log.i("Services",uuid);
             if(uuid.equals(targetServiceUuid.toString())){
                 targetGattService = gattService;
+                Log.i("HANDLER","Found our service.");
                 break;
             }
         }
+
         if(targetGattService != null){
-            Toast.makeText(context, "get service ok", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(context, "get service ok", Toast.LENGTH_SHORT).show();
         }else{
-            Toast.makeText(context, "not support this BLE module", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Failed to retrieve Service.", Toast.LENGTH_SHORT).show();
             return ;
         }
         List<BluetoothGattCharacteristic> gattCharacteristics =
@@ -214,9 +214,10 @@ public class BluetoothHandler {
         // get targetGattCharacteristic
         for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
             uuid = gattCharacteristic.getUuid().toString();
-            Log.i("CHARACTERISTICS","UUID: "+uuid);
+            Log.i("Characteristics","UUID: "+uuid);
             if(uuid.equals(targetCharacterUuid.toString())){
                 targetGattCharacteristic = gattCharacteristic;
+                Log.i("HANDLER","Found our characteristic.");
                 break;
             }
         }
@@ -226,14 +227,17 @@ public class BluetoothHandler {
             mBLEService.setCharacteristicNotification(readGattCharacteristic, true);
 
         if(targetGattCharacteristic != null){
-            Toast.makeText(context, "get character ok", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(context, "get character ok", Toast.LENGTH_SHORT).show();
         }else{
-            Toast.makeText(context, "not support this BLE module", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Failed to retrieve characteristic.", Toast.LENGTH_SHORT).show();
             return ;
         }
 
         if(targetGattService!=null && targetGattCharacteristic!=null){
-            Log.i("HANDLER","READY TO SEND");
+            Toast.makeText(context,
+                    "           Connected.\nService UUID: "+targetGattService.getUuid().toString().substring(0,8)
+                            + "\nCharacteristic UUID: "+targetGattCharacteristic.getUuid().toString().substring(0,8),
+                    Toast.LENGTH_SHORT).show();
             if(onReadyForTransmissionListener!=null){
                 onReadyForTransmissionListener.OnReady(true);
             }
@@ -242,59 +246,6 @@ public class BluetoothHandler {
             mBLEService.disconnect();
             mBLEService.close();
         }
-
-        /*
-        When we send here it works, but trying to get it to send after the handler it will not send
-         */
-        /*
-        //thi sisnt being called
-        Log.i("BEFORE","BEFORE MESSAGE");
-        //test
-        //this.sendData("Hello".getBytes());
-        //todo jump with joy this works need to take the necessary code from here into our project
-        //todo write up how to use this hm-11 bastard thing
-        try {
-            sendData("<w>".getBytes());
-            Thread.sleep(250);
-            sendData("Tue".getBytes());
-            Thread.sleep(250);
-            sendData("<t>".getBytes());
-            Thread.sleep(250);
-            sendData("11.2".getBytes());
-            Thread.sleep(250);
-            sendData("<t>".getBytes());
-            Thread.sleep(250);
-            sendData("Meatballs".getBytes());
-            Thread.sleep(250);
-            sendData("<f>".getBytes());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        Log.i("SUCCESS","MEssage sent");
-        */
-
-        /*try{
-            //wait a second
-            Thread.sleep(1000);
-            sendData("<w>".getBytes());
-            Thread.sleep(250);
-            sendData("Tue".getBytes());
-            Thread.sleep(250);
-            sendData("<t>".getBytes());
-            Thread.sleep(250);
-            sendData("42.3".getBytes());
-            Thread.sleep(250);
-            sendData("<t>".getBytes());
-            Thread.sleep(250);
-            sendData("Murballs".getBytes());
-            Thread.sleep(250);
-            sendData("<f>".getBytes());
-            Thread.sleep(250);
-
-        } catch (InterruptedException e){
-
-        }*/
     }
 
     public void close(){
@@ -302,6 +253,7 @@ public class BluetoothHandler {
         mBLEService.close();
         //todo unreg recievers etc
         context.unregisterReceiver(mGattUpdateReceiver);
+        context.unbindService(mServiceConnection);
     }
 
     public void onPause() {

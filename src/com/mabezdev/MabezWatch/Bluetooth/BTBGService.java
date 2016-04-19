@@ -36,8 +36,7 @@ public class BTBGService extends Service {
     private final static String CLOSE_TAG = "<e>";
     private final static String END_TAG = "<f>";
     private final static int CHUNK_SIZE = 64; //64 bytes of data
-    private final static int WEATHER_REFRESH_TIME = 300000; // 5 mins
-    private int retries = 0;
+    private final static int WEATHER_REFRESH_TIME = 300000; // 5 mins (300000/1000 = 300/60)
     private String[] data = null;
     private boolean isConnected = false;
     private static final String TAG = "ASYNC_TRANSMIT";
@@ -49,6 +48,7 @@ public class BTBGService extends Service {
     private Queue<String[]> transmitQueue;
     private boolean isTransmitting;
     private static final int notificationID = 1234;
+    private static final int DATA_LENGTH = 170;
 
     /*
     BLE HM-11 SERVICES:
@@ -82,12 +82,12 @@ public class BTBGService extends Service {
                 if (isConnected) {
                     Log.i("TRANSMIT", "Connected.");
                     BTBGService.this.isConnected = true;
-                    showNotification("Connected to MabezWatch ("+BluetoothUtil.getChosenMac()+").");
+                    //showNotification("Connected to MabezWatch ("+BluetoothUtil.getChosenMac()+").");
 
                 } else {
                     Log.i("TRANSMIT","Disconnected.");
                     BTBGService.this.isConnected = false;
-                    showNotification("Disconnected from MabezWatch.");
+                    //showNotification("Disconnected from MabezWatch.");
                     stopSelf();
                 }
             }});
@@ -96,6 +96,7 @@ public class BTBGService extends Service {
             @Override
             public void OnReady(boolean isReady) {
                 // all data that needs to be sent at the start done here
+                Log.i(TAG,"Ready for transmission.");
                 yahooWeather.queryYahooWeatherByGPS(BTBGService.this,yahooWeatherInfoListener);
 
                 transmitQueue.add(formatDateData());
@@ -108,11 +109,7 @@ public class BTBGService extends Service {
             @Override
             public void gotWeatherInfo(WeatherInfo weatherInfo) {
                 if(weatherInfo!=null){
-                    //send data here as it is got once queried.
-                    Log.i("TEMPERATURE (C): ",Float.toString((weatherInfo.getCurrentTemp() - 32)/1.8f));
-                    for(WeatherInfo.ForecastInfo info: weatherInfo.getForecastInfoList()){
-                        Log.i(info.getForecastDay(),info.getForecastText());
-                    }
+                    //add data to the transmit queue
                     transmitQueue.add(formatWeatherData(weatherInfo.getForecastInfo1().getForecastDay(),
                             String.format("%.2f", (weatherInfo.getCurrentTemp() - 32) / 1.8f),
                             weatherInfo.getForecastInfo1().getForecastText()));
@@ -136,6 +133,7 @@ public class BTBGService extends Service {
     }
 
     private void showNotification(String eventText) {
+        //todo replace with NotificationCompat
         // Set the icon, scrolling text and timestamp
         Notification notification = new Notification(R.drawable.ic_launcher,
                 "MabezWatch", System.currentTimeMillis());
@@ -206,23 +204,37 @@ public class BTBGService extends Service {
 
     private String[] formatNotificationData(String pkg, String title, String text){
         //todo need to check that the text is not too big and need to add a phase to read
-        //the rest on the phone!
+        /*
+            Data struct on teensy:
+                -Package name = 15 characters
+                -Title = 15 characters
+                -Text = 150 characters
+         */
         ArrayList<String> format = new ArrayList<String>();
-        format.add(NOTIFICATION_TAG+pkg);
+        if(pkg.length() > 15){
+            pkg = pkg.substring(0,15);
+        }
+        if(title.length() > 15){
+            title = title.substring(0,15);
+        }
+        format.add(NOTIFICATION_TAG+pkg);//cut title and
         format.add(TITLE_TAG+title+CLOSE_TAG);
         int charIndex = 0;
         String temp = "";
+        //notificatiobns arent sending atm
         if(text.length() > CHUNK_SIZE) {
-            for (char c : text.toCharArray()) {
+            for (int i=0; i < DATA_LENGTH; i++) { //max 150 for message + 20 chars for tags
                 if (charIndex >= CHUNK_SIZE) {//send in chunks of 64 chars
                     format.add(DATA_INTERVAL_TAG+temp);
                     temp = "";
                     charIndex = 0;
                 } else {
-                    temp += c;
+                    temp += text.charAt(i);
                 }
                 charIndex++;
             }
+            //this adds the last piece of data if it is under 64 characters
+            format.add(DATA_INTERVAL_TAG+temp);
         } else {
             format.add(DATA_INTERVAL_TAG+text);
         }

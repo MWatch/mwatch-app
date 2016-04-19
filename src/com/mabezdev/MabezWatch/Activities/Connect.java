@@ -95,7 +95,7 @@ public class Connect extends Activity {
                 //close this bt handler as we just used it to scan it
                 //bluetoothHandler.close();
                 //bluetoothHandler = null;
-                BluetoothUtil.setChosenMac(BTArrayAdapter.getItem(position));
+                BluetoothUtil.setChosenMac(BTArrayAdapter.getItem(position).split("\n")[1]);
                 startService(new Intent(getBaseContext(),BTBGService.class));
             }
         });
@@ -106,7 +106,15 @@ public class Connect extends Activity {
         bluetoothHandler.setOnScanListener(new BluetoothHandler.OnScanListener() {
             @Override
             public void onScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-                BTArrayAdapter.add(device.getAddress());
+                boolean contains = false;
+                for(int i=0; i < BTArrayAdapter.getCount(); i++){
+                    if(BTArrayAdapter.getItem(i).equals(device.getName()+"\n"+device.getAddress())){
+                        contains = true;
+                    }
+                }
+                if(!contains) {
+                    BTArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+                }
             }
 
             @Override
@@ -163,7 +171,6 @@ public class Connect extends Activity {
     protected void onDestroy() {
         // TODO Auto-generated method stub
         super.onDestroy();
-
         BluetoothUtil.storeDevice(chosenBT);
 
     }
