@@ -254,6 +254,8 @@ public class BluetoothHandler {
         //todo unreg recievers etc
         context.unregisterReceiver(mGattUpdateReceiver);
         context.unbindService(mServiceConnection);
+        //mHandler.removeCallbacks();
+        mHandler = null;
     }
 
     public void onPause() {
@@ -283,7 +285,6 @@ public class BluetoothHandler {
         }
     }
 
-    //steal this algorithm
     public synchronized void sendData(byte[] value){
         if(targetGattCharacteristic != null && mBLEService != null && mConnected == true){
             int targetLen = 0;

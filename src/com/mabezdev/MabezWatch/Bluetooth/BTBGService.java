@@ -20,6 +20,7 @@ import zh.wang.android.apis.yweathergetter4a.WeatherInfo;
 import zh.wang.android.apis.yweathergetter4a.YahooWeather;
 import zh.wang.android.apis.yweathergetter4a.YahooWeatherInfoListener;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -82,12 +83,12 @@ public class BTBGService extends Service {
                 if (isConnected) {
                     Log.i("TRANSMIT", "Connected.");
                     BTBGService.this.isConnected = true;
-                    //showNotification("Connected to MabezWatch ("+BluetoothUtil.getChosenMac()+").");
+                    showNotification("Connected to MabezWatch ("+BluetoothUtil.getChosenMac()+").");
 
                 } else {
                     Log.i("TRANSMIT","Disconnected.");
                     BTBGService.this.isConnected = false;
-                    //showNotification("Disconnected from MabezWatch.");
+                    showNotification("Disconnected from MabezWatch.");
                     stopSelf();
                 }
             }});
@@ -182,6 +183,12 @@ public class BTBGService extends Service {
             //check the queue if it has data
             if(!transmitQueue.isEmpty()){
                 if(!isTransmitting) { //wait till we are not transmitting
+                    //small delay between transmissions
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     data = transmitQueue.poll();//remove from queue and put it here
                     new TransmitTask().execute();
                 }
@@ -211,17 +218,16 @@ public class BTBGService extends Service {
                 -Text = 150 characters
          */
         ArrayList<String> format = new ArrayList<String>();
-        if(pkg.length() > 15){
-            pkg = pkg.substring(0,15);
+        if(pkg.length() >= 15){
+            pkg = pkg.substring(0,14);
         }
-        if(title.length() > 15){
-            title = title.substring(0,15);
+        if(title.length() >= 15){
+            title = title.substring(0,14);
         }
-        format.add(NOTIFICATION_TAG+pkg);//cut title and
+        format.add(NOTIFICATION_TAG+pkg);
         format.add(TITLE_TAG+title+CLOSE_TAG);
         int charIndex = 0;
         String temp = "";
-        //notificatiobns arent sending atm
         if(text.length() > CHUNK_SIZE) {
             for (int i=0; i < DATA_LENGTH; i++) { //max 150 for message + 20 chars for tags
                 if (charIndex >= CHUNK_SIZE) {//send in chunks of 64 chars
@@ -243,10 +249,15 @@ public class BTBGService extends Service {
     }
 
     private String[] formatDateData(){
-        //send each part separately?
+        Date myDate = new Date();
+        SimpleDateFormat ft =
+                new SimpleDateFormat("dd MM yy hh:mm:ss");
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(myDate);
+        int i = calendar.get(Calendar.DAY_OF_WEEK);
         String[] date = new String[3];
         date[0] = DATE_TAG;
-        date[1] = DateFormat.getDateTimeInstance().format(new Date());
+        date[1] = i + " " + ft.format(myDate);
         date[2] = END_TAG;
         return date;
     }

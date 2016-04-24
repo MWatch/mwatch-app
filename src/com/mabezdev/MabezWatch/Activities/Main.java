@@ -180,7 +180,7 @@ public class Main extends Activity {
                 new Intent(ctx, Main.class), 0);
 
         // Set the info for the views that show in the notification panel.
-        notification.setLatestEventInfo(ctx, "Title", eventtext,
+        notification.setLatestEventInfo(ctx, "Titlethatsisover15characterslong", eventtext,
                 contentIntent);
 
         // Send the notification.
