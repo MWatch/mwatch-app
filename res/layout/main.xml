@@ -9,43 +9,48 @@
     <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Disconnect Watch"
-            android:id="@+id/dcButton"
-            android:layout_marginBottom="44dp" android:layout_alignParentBottom="true"
-            android:layout_alignEnd="@+id/notification"/>
+            android:text="Quick Connect"
+            android:id="@+id/connectButton"
+            android:layout_marginBottom="23dp"
+            android:layout_alignParentBottom="true" android:layout_alignStart="@+id/scanButton"/>
     <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Push Notifications"
             android:id="@+id/notification"
-            android:layout_below="@+id/addFilter" android:layout_centerHorizontal="true"
-            android:layout_marginTop="23dp"/>
+            android:layout_above="@+id/connectButton" android:layout_centerHorizontal="true"/>
     <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/editText"
-            android:layout_alignParentTop="true" android:layout_alignParentStart="true"
-            android:layout_marginTop="135dp" android:layout_alignEnd="@+id/notification"/>
+            android:layout_above="@+id/addFilter" android:layout_alignParentLeft="true"/>
     <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Add filter"
             android:id="@+id/addFilter"
-            android:layout_alignBottom="@+id/editText" android:layout_toEndOf="@+id/editText"/>
+            android:layout_above="@+id/notification" android:layout_alignParentStart="true"
+            android:layout_alignParentEnd="true"/>
     <Button
+            style="?android:attr/buttonStyleSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pair Device"
-            android:id="@+id/connect"
-            android:layout_marginBottom="34dp" android:layout_above="@+id/dcButton"
-            android:layout_centerHorizontal="true"/>
-    <Switch
+            android:text="Find MabezWatch"
+            android:id="@+id/scanButton"
+            android:layout_alignParentTop="true" android:layout_centerHorizontal="true"/>
+    <ListView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Quick Connect"
-            android:id="@+id/connectSwitch"
-            android:layout_marginTop="31dp" android:checked="false" android:layout_alignParentTop="true"
-            android:layout_alignEnd="@+id/connect"/>
+            android:id="@+id/listView"
+            android:layout_centerHorizontal="true"
+            android:layout_below="@+id/scanButton" android:layout_above="@+id/notification"/>
+    <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pair"
+            android:id="@+id/pairButton" android:layout_alignBottom="@+id/notification"
+            android:layout_alignParentStart="true" android:layout_toStartOf="@+id/notification"/>
 
 </RelativeLayout>

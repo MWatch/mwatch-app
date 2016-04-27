@@ -19,7 +19,7 @@
         android:label="@string/app_name"
         android:icon="@drawable/ic_launcher"
         android:configChanges="keyboardHidden|orientation|screenSize" >
-        <service android:name=".Bluetooth.BTBGService"> </service>
+        <service android:name=".Bluetooth.BTBGService" android:enabled="true"/>
         <service android:name=".Bluetooth.BLEService" android:enabled="true"/>
         <service android:name=".myNotificationListener"
                  android:label="@string/service_name"

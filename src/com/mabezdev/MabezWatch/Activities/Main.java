@@ -12,7 +12,6 @@ import android.content.Context;
 import java.util.ArrayList;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.*;
@@ -23,22 +22,20 @@ import com.mabezdev.MabezWatch.R;
 import com.mabezdev.MabezWatch.Util.ObjectReader;
 import com.mabezdev.MabezWatch.myNotificationListener;
 
-import static android.R.attr.text;
-
 
 public class Main extends Activity {
 
-    private Button dcButton;
-    private Button pair;
+    private Button connectButton;
     private Button enablePush;
     private Button addFilter;
+    private Button pairButton;
     private EditText filterBox;
-    private Switch autoConnect;
     private NotificationReceiver nReceiver;
     private static ArrayList<Bundle> notificationQueue;
     private static ArrayList<String> filter;
     public static String BLUETOOTH_FILE;
     public static final String NOTIFICATION_FILTER = "com.mabez.GET_NOTIFICATIONS";
+    private boolean isConnected = false;
 
 
     @Override
@@ -94,7 +91,7 @@ public class Main extends Activity {
 
     public void setupUI(){
 
-        autoConnect = (Switch) findViewById(R.id.connectSwitch);
+        /*autoConnect = (Switch) findViewById(R.id.connectSwitch);
         autoConnect.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -116,7 +113,7 @@ public class Main extends Activity {
                     autoConnect.setText("Quick Connect");
                 }
             }
-        });
+        });*/
 
 
         filterBox = (EditText) findViewById(R.id.editText);
@@ -132,20 +129,24 @@ public class Main extends Activity {
         });
 
 
-        pair = (Button) findViewById(R.id.connect);
-        pair.setOnClickListener(new OnClickListener() {
+        connectButton = (Button) findViewById(R.id.connectButton);
+        connectButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent goToConnect = new Intent(Main.this,Connect.class);
-                startActivity(goToConnect);
+                if(isConnected){
+                    connectButton.setText("Disconnect");
+                } else {
+                    connectButton.setText("Connect");
+                }
+                //stopService(new Intent(getBaseContext(), BTBGService.class));
             }
         });
 
-        dcButton = (Button) findViewById(R.id.dcButton);
-        dcButton.setOnClickListener(new OnClickListener() {
+        pairButton = (Button) findViewById(R.id.pairButton);
+        pairButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                stopService(new Intent(getBaseContext(), BTBGService.class));
+                startActivity(new Intent(Main.this,Connect.class));
             }
         });
         /*

@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.AsyncTask;
+import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
@@ -27,7 +28,7 @@ import java.util.*;
  */
 public class BTBGService extends Service {
 
-    private static final int SEND_DELAY = 25; //delay between
+    private static final int SEND_DELAY = 50; //delay between
     private NotificationReceiver notificationReceiver;
     private final static String NOTIFICATION_TAG = "<n>";
     private final static String DATE_TAG = "<d>";
@@ -50,7 +51,14 @@ public class BTBGService extends Service {
     private boolean isTransmitting;
     private static final int notificationID = 1234;
     private static final int DATA_LENGTH = 170;
+    private final IBinder myBinder = new MyLocalBinder();
+    private OnConnectedListener connectionListener;
 
+
+    public interface OnConnectedListener{
+        public void onConnected();
+        public void onDisconnected();
+    }
     /*
     BLE HM-11 SERVICES:
 
@@ -88,8 +96,14 @@ public class BTBGService extends Service {
                     showNotification("Connected to MabezWatch ("+BluetoothUtil.getChosenDeviceMac()+").");
                     //save device for quick connect
                     BluetoothUtil.storeDevice(BluetoothUtil.getChosenDeviceName(),BluetoothUtil.getChosenDeviceMac());
+                    if(connectionListener!=null){
+                        connectionListener.onConnected();
+                    }
 
                 } else {
+                    if(connectionListener!=null){
+                        connectionListener.onDisconnected();
+                    }
                     Log.i("TRANSMIT","Disconnected.");
                     BTBGService.this.isConnected = false;
                     showNotification("Disconnected from MabezWatch.");
@@ -135,6 +149,10 @@ public class BTBGService extends Service {
         bluetoothHandler.connect(BluetoothUtil.getChosenDeviceMac());
 
         return START_STICKY;
+    }
+
+    public void setOnConnectedListener(OnConnectedListener l){
+        this.connectionListener = l;
     }
 
     private void showNotification(String eventText) {
@@ -268,10 +286,15 @@ public class BTBGService extends Service {
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
-        //c
+    public IBinder onBind(Intent arg0) {
+        //very IMPORTANT
+        return myBinder;
+    }
 
-        return null;
+    public class MyLocalBinder extends Binder {
+        public BTBGService getService() {
+            return BTBGService.this;
+        }
     }
 
     @Override

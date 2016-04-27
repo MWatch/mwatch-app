@@ -16,6 +16,7 @@ public class BluetoothUtil {
     private static Set<BluetoothDevice> pairedDevices;
     private static String chosenDeviceMac;
     private static String chosenDeviceName;
+    private static BTBGService service;
 
     private BluetoothUtil(){
 
@@ -46,6 +47,14 @@ public class BluetoothUtil {
             }
         }
         return null;
+    }
+
+    public static void setBoundService(BTBGService services){
+        service = services;
+    }
+
+    public static BTBGService getBoundService(){
+        return service;
     }
 
     public static void setChosenDeviceMac(String mac){

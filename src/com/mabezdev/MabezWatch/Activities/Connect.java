@@ -4,16 +4,20 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.util.Log;
 import android.view.View;
 import android.widget.*;
 import com.mabezdev.MabezWatch.Bluetooth.BTBGService;
 import com.mabezdev.MabezWatch.Bluetooth.BluetoothHandler;
 import com.mabezdev.MabezWatch.Bluetooth.BluetoothUtil;
 import com.mabezdev.MabezWatch.R;
-import java.util.Set;
+
 
 /**
  * Created by Mabez on 19/03/2016.
@@ -21,13 +25,13 @@ import java.util.Set;
 public class Connect extends Activity {
 
     private Button searchBtn;
-    private Button disconnectButton;
     private TextView status;
     private BluetoothAdapter myBluetoothAdapter;
-    private Set<BluetoothDevice> pairedDevices;
     private BluetoothHandler bluetoothHandler;
     private ListView myListView;
     private ArrayAdapter<String> BTArrayAdapter;
+    private BTBGService myBTService;
+    private boolean isBound = false;
     private static final int REQUEST_ENABLE_BT = 1;
 
     @Override
@@ -48,7 +52,6 @@ public class Connect extends Activity {
         }
 
         bluetoothHandler = new BluetoothHandler(this);
-
         setupUI();
     }
 
@@ -70,9 +73,18 @@ public class Connect extends Activity {
                 //close this bt handler as we just used it to scan it
                 //bluetoothHandler.close();
                 //bluetoothHandler = null;
-                BluetoothUtil.setChosenDeviceMac(BTArrayAdapter.getItem(position).split("\n")[1]);
-                BluetoothUtil.setChosenDeviceName(BTArrayAdapter.getItem(position).split("\n")[0]);
-                startService(new Intent(getBaseContext(),BTBGService.class));
+                if(!isBound) {
+                    BluetoothUtil.setChosenDeviceMac(BTArrayAdapter.getItem(position).split("\n")[1]);
+                    BluetoothUtil.setChosenDeviceName(BTArrayAdapter.getItem(position).split("\n")[0]);
+
+                    Intent btIntent = new Intent(getBaseContext(), BTBGService.class);
+                    startService(btIntent);
+
+                    bindService(btIntent, myConnection, Context.BIND_AUTO_CREATE);
+                } else {
+                    unbindService(myConnection);
+                }
+
             }
         });
 
@@ -127,9 +139,32 @@ public class Connect extends Activity {
                 Toast.LENGTH_LONG).show();
     }
 
+    private ServiceConnection myConnection = new ServiceConnection() {
+
+        public void onServiceConnected(ComponentName className,
+                                       IBinder service) {
+            BTBGService.MyLocalBinder binder = (BTBGService.MyLocalBinder) service;
+            myBTService = binder.getService();
+            isBound = true;
+            Log.i("CONNECT","Service is connected");
+        }
+
+        public void onServiceDisconnected(ComponentName arg0) {
+            isBound = false;
+            if (isBound) {
+                unbindService(myConnection);
+                isBound = false;
+            }
+        }
+
+    };
+
     @Override
     protected void onDestroy() {
-        // TODO Auto-generated method stub
+        if (isBound) {
+            unbindService(myConnection);
+            isBound = false;
+        }
         super.onDestroy();
     }
 }
