@@ -37,16 +37,8 @@ public class Main extends Activity {
     private NotificationReceiver nReceiver;
     private static ArrayList<Bundle> notificationQueue;
     private static ArrayList<String> filter;
-
     public static String BLUETOOTH_FILE;
     public static final String NOTIFICATION_FILTER = "com.mabez.GET_NOTIFICATIONS";
-
-
-    /*
-    todo: Add the notificationListenerService to grab my notifications to my phone and push them to my phone http://stackoverflow.com/questions/3030626/android-get-all-the-notifications-by-code
-    todo: make the app look nicer
-    todo: stop the app fro starting again on format change (portrait to landscape and visa versa)
-     */
 
 
     @Override
@@ -73,20 +65,22 @@ public class Main extends Activity {
 
     }
 
+    @Deprecated
     public void addNotification(Bundle notification){
         notificationQueue.add(notification);
         printNotificationQueue();
     }
-
+    @Deprecated
     public static ArrayList<Bundle> getNotificationQueue(){
         return notificationQueue;
     }
 
+    @Deprecated
     public static void removeNotifications(ArrayList e){
         notificationQueue.removeAll(e);
     }
 
-
+    @Deprecated
     public void printNotificationQueue(){
         for(Bundle extras : notificationQueue){
             System.out.println("Package: " + extras.getString("PKG"));
@@ -108,12 +102,18 @@ public class Main extends Activity {
                 if(isChecked){
                     //load saved device address
                     DeviceSave store = (DeviceSave) ObjectReader.readObject(BLUETOOTH_FILE);
-                    //connect from saved bluetooth device
-                    BluetoothUtil.turnOnBluetooth(BluetoothUtil.getDefaultAdapter());
-                    BluetoothUtil.setChosenDevice(BluetoothUtil.getDeviceFromAddress(store.getDeviceAddress(),BluetoothUtil.getDefaultAdapter()));
-                    startService(autoGo);
+                    if(store != null) {
+                        BluetoothUtil.setChosenDeviceName(store.getDeviceName());
+                        BluetoothUtil.setChosenDeviceMac(store.getDeviceAddress());
+                        startService(autoGo);
+                        autoConnect.setText("Connected");
+                    } else {
+                        autoConnect.setChecked(false);
+                        Toast.makeText(getBaseContext(),"No device stored! Connect manually first!",Toast.LENGTH_SHORT).show();
+                    }
                 } else {
                     stopService(autoGo);
+                    autoConnect.setText("Quick Connect");
                 }
             }
         });

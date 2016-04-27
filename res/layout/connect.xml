@@ -3,45 +3,26 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
-    <TextView
-            android:id="@+id/text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="@string/Text" />
-
 
     <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_below="@+id/text" android:id="@+id/linearLayout">
-
-        <Button
-                android:id="@+id/paired"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/List" />
+            android:id="@+id/linearLayout">
 
         <Button
                 android:id="@+id/search"
-                android:layout_width="wrap_content"
+                android:layout_width="275dp"
                 android:layout_height="wrap_content"
                 android:text="@string/Found"/>
 
         <ListView
                 android:id="@+id/listView1"
                 android:layout_width="fill_parent"
-                android:layout_height="200dp" >
+                android:layout_height="430dp" >
 
         </ListView>
 
     </LinearLayout>
-    <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Disconnect"
-            android:id="@+id/disconnectButton" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true"
-            android:layout_marginBottom="35dp"/>
 
 </RelativeLayout>

@@ -3,9 +3,6 @@ package com.mabezdev.MabezWatch.Bluetooth;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
-import android.content.Intent;
-import android.util.Log;
-import android.widget.Toast;
 import com.mabezdev.MabezWatch.Activities.Main;
 import com.mabezdev.MabezWatch.Util.ObjectWriter;
 
@@ -16,12 +13,9 @@ import java.util.Set;
  */
 public class BluetoothUtil {
 
-    //todo NOW USING HM-11 BLE need to implement connecting via ble
-
-    private static BluetoothDevice chosenBT;
     private static Set<BluetoothDevice> pairedDevices;
-    private static String chosenMac;
-    private static BluetoothHandler bthandler;
+    private static String chosenDeviceMac;
+    private static String chosenDeviceName;
 
     private BluetoothUtil(){
 
@@ -41,6 +35,7 @@ public class BluetoothUtil {
         return mng.getAdapter();
     }
 
+    @Deprecated
     public static BluetoothDevice getDeviceFromAddress(String address, BluetoothAdapter bluetoothAdapter){
         if(pairedDevices==null){
             pairedDevices = bluetoothAdapter.getBondedDevices();
@@ -53,21 +48,20 @@ public class BluetoothUtil {
         return null;
     }
 
-    public static void setChosenMac(String mac){
-        Log.i("UTIL","Setting mac: "+mac);
-        chosenMac = mac;
+    public static void setChosenDeviceMac(String mac){
+        chosenDeviceMac = mac;
     }
 
-    public static String getChosenMac(){
-        return chosenMac;
+    public static String getChosenDeviceMac(){
+        return chosenDeviceMac;
     }
 
-    public static void setChosenDevice(BluetoothDevice b){
-        chosenBT = b;
+    public static String getChosenDeviceName() {
+        return chosenDeviceName;
     }
 
-    public static BluetoothDevice getDeviceToConnect(){
-        return chosenBT;
+    public static void setChosenDeviceName(String chosenDeviceName) {
+        BluetoothUtil.chosenDeviceName = chosenDeviceName;
     }
 
     public static void turnOnBluetooth(BluetoothAdapter b){
@@ -81,22 +75,13 @@ public class BluetoothUtil {
         }
     }
 
-    public static void storeDevice(BluetoothDevice BT){
+    public static void storeDevice(String name, String mac){
         //save bluetoothDevice
-        DeviceSave store = new DeviceSave(BT);
+        DeviceSave store = new DeviceSave(name,mac);
 
         boolean done = ObjectWriter.writeObject(Main.BLUETOOTH_FILE,store);
         if(!done){
             System.out.println("Write failed! The preffered device will not be stored.");
         }
-    }
-
-
-    public static void setBluetoothHandler(BluetoothHandler bluetoothHandler) {
-        bthandler = bluetoothHandler;
-    }
-
-    public static BluetoothHandler getBluetoothHandler(){
-        return bthandler;
     }
 }

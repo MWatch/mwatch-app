@@ -138,7 +138,7 @@ public class BluetoothHandler {
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
 
-            //mBLEService = null;
+            mBLEService = null;
         }
     };
 
@@ -308,6 +308,8 @@ public class BluetoothHandler {
             }
         } else {
             Log.i("ERROR","FAILED TO SEND");
+            this.disconnect();
+            this.close();
         }
     }
 

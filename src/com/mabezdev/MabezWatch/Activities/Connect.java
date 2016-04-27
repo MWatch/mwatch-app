@@ -4,21 +4,15 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
-import android.view.animation.TranslateAnimation;
 import android.widget.*;
 import com.mabezdev.MabezWatch.Bluetooth.BTBGService;
 import com.mabezdev.MabezWatch.Bluetooth.BluetoothHandler;
 import com.mabezdev.MabezWatch.Bluetooth.BluetoothUtil;
-import com.mabezdev.MabezWatch.Bluetooth.DeviceSave;
 import com.mabezdev.MabezWatch.R;
-import com.mabezdev.MabezWatch.Util.ObjectWriter;
 import java.util.Set;
 
 /**
@@ -26,7 +20,6 @@ import java.util.Set;
  */
 public class Connect extends Activity {
 
-    private Button listBtn;
     private Button searchBtn;
     private Button disconnectButton;
     private TextView status;
@@ -35,9 +28,7 @@ public class Connect extends Activity {
     private BluetoothHandler bluetoothHandler;
     private ListView myListView;
     private ArrayAdapter<String> BTArrayAdapter;
-    private static BluetoothDevice chosenBT;
     private static final int REQUEST_ENABLE_BT = 1;
-    private boolean deviceConnected = false;
 
     @Override
     public void onCreate(Bundle onSavedInstance){
@@ -50,8 +41,6 @@ public class Connect extends Activity {
 
 
         if(myBluetoothAdapter == null) {
-            listBtn.setEnabled(false);
-
             Toast.makeText(getApplicationContext(),"Your device does not support Bluetooth",
                     Toast.LENGTH_LONG).show();
         } else {
@@ -66,20 +55,6 @@ public class Connect extends Activity {
 
 
     private void setupUI(){
-        listBtn = (Button)findViewById(R.id.paired);
-        listBtn.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                list(v);
-            }
-        });
-
-        //todo remvoe this button completely s were never gunna use it
-        listBtn.setVisibility(View.INVISIBLE);
-
-        disconnectButton = (Button) findViewById(R.id.disconnectButton);
-        disconnectButton.setVisibility(View.INVISIBLE);
 
 
         myListView = (ListView)findViewById(R.id.listView1);
@@ -95,11 +70,11 @@ public class Connect extends Activity {
                 //close this bt handler as we just used it to scan it
                 //bluetoothHandler.close();
                 //bluetoothHandler = null;
-                BluetoothUtil.setChosenMac(BTArrayAdapter.getItem(position).split("\n")[1]);
+                BluetoothUtil.setChosenDeviceMac(BTArrayAdapter.getItem(position).split("\n")[1]);
+                BluetoothUtil.setChosenDeviceName(BTArrayAdapter.getItem(position).split("\n")[0]);
                 startService(new Intent(getBaseContext(),BTBGService.class));
             }
         });
-        status = (TextView) findViewById(R.id.text);
 
         searchBtn = (Button) findViewById(R.id.search);
 
@@ -134,21 +109,6 @@ public class Connect extends Activity {
 
     }
 
-    private void list(View v){
-        pairedDevices = BluetoothUtil.getBluetoothDevices(myBluetoothAdapter);
-
-        for(BluetoothDevice device : pairedDevices)
-            BTArrayAdapter.add(device.getName()+ "\n" + device.getAddress());
-
-        Toast.makeText(getApplicationContext(),"Show Paired Devices",
-                Toast.LENGTH_SHORT).show();
-    }
-
-    public static BluetoothDevice getDeviceToConnect(){
-        return chosenBT;
-    }
-
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // TODO Auto-generated method stub
@@ -171,7 +131,5 @@ public class Connect extends Activity {
     protected void onDestroy() {
         // TODO Auto-generated method stub
         super.onDestroy();
-        BluetoothUtil.storeDevice(chosenBT);
-
     }
 }

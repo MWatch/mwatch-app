@@ -43,8 +43,9 @@
     <Switch
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Connect"
-            android:id="@+id/connectSwitch" android:layout_alignParentTop="true" android:layout_alignEnd="@+id/addFilter"
-            android:layout_marginTop="31dp" android:checked="false"/>
+            android:text="Quick Connect"
+            android:id="@+id/connectSwitch"
+            android:layout_marginTop="31dp" android:checked="false" android:layout_alignParentTop="true"
+            android:layout_alignEnd="@+id/connect"/>
 
 </RelativeLayout>

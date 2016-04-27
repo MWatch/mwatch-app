@@ -11,7 +11,6 @@ import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 import com.mabezdev.MabezWatch.Activities.Main;
@@ -19,7 +18,7 @@ import com.mabezdev.MabezWatch.R;
 import zh.wang.android.apis.yweathergetter4a.WeatherInfo;
 import zh.wang.android.apis.yweathergetter4a.YahooWeather;
 import zh.wang.android.apis.yweathergetter4a.YahooWeatherInfoListener;
-import java.text.DateFormat;
+
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -28,6 +27,7 @@ import java.util.*;
  */
 public class BTBGService extends Service {
 
+    private static final int SEND_DELAY = 25; //delay between
     private NotificationReceiver notificationReceiver;
     private final static String NOTIFICATION_TAG = "<n>";
     private final static String DATE_TAG = "<d>";
@@ -61,6 +61,8 @@ public class BTBGService extends Service {
     0000ffe1-0000-1000-8000-00805f9b34fb
      */
 
+    //todo might need this to be a bound service so we can get data like if its connected or not
+
     @Override
     public int onStartCommand(Intent i,int flags,int srtID){
 
@@ -83,7 +85,9 @@ public class BTBGService extends Service {
                 if (isConnected) {
                     Log.i("TRANSMIT", "Connected.");
                     BTBGService.this.isConnected = true;
-                    showNotification("Connected to MabezWatch ("+BluetoothUtil.getChosenMac()+").");
+                    showNotification("Connected to MabezWatch ("+BluetoothUtil.getChosenDeviceMac()+").");
+                    //save device for quick connect
+                    BluetoothUtil.storeDevice(BluetoothUtil.getChosenDeviceName(),BluetoothUtil.getChosenDeviceMac());
 
                 } else {
                     Log.i("TRANSMIT","Disconnected.");
@@ -128,7 +132,7 @@ public class BTBGService extends Service {
         queueHandler = new Handler();
         queueHandler.postDelayed(queueRunnable,500);
 
-        bluetoothHandler.connect(BluetoothUtil.getChosenMac());
+        bluetoothHandler.connect(BluetoothUtil.getChosenDeviceMac());
 
         return START_STICKY;
     }
@@ -155,10 +159,14 @@ public class BTBGService extends Service {
     private void transmit(String[] formattedData){
         //delay between each statement it received individual
         for(int i=0; i < formattedData.length; i++){
-            //write(formattedData[i]);
-            bluetoothHandler.sendData(formattedData[i].getBytes());
+            if(bluetoothHandler!=null) {
+                bluetoothHandler.sendData(formattedData[i].getBytes());
+            } else {
+                Log.i(TAG,"Handler is null stopping transmission.");
+                stopSelf();
+            }
             try {
-                Thread.sleep(250);
+                Thread.sleep(SEND_DELAY);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -168,7 +176,7 @@ public class BTBGService extends Service {
     private Runnable weatherRunnable = new Runnable() {
         @Override
         public void run() {
-            if(isConnected) {//change
+            if(isConnected) {
                 yahooWeather.queryYahooWeatherByGPS(getBaseContext(), yahooWeatherInfoListener);
             } else {
                 Log.i("WEATHER", "Not querying as the device is not connected.");
@@ -183,7 +191,7 @@ public class BTBGService extends Service {
             //check the queue if it has data
             if(!transmitQueue.isEmpty()){
                 if(!isTransmitting) { //wait till we are not transmitting
-                    //small delay between transmissions
+                    //delay between transmissions
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
@@ -251,13 +259,10 @@ public class BTBGService extends Service {
     private String[] formatDateData(){
         Date myDate = new Date();
         SimpleDateFormat ft =
-                new SimpleDateFormat("dd MM yy hh:mm:ss");
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(myDate);
-        int i = calendar.get(Calendar.DAY_OF_WEEK);
+                new SimpleDateFormat("dd MM yyyy HH:mm:ss");
         String[] date = new String[3];
         date[0] = DATE_TAG;
-        date[1] = i + " " + ft.format(myDate);
+        date[1] = ft.format(myDate);
         date[2] = END_TAG;
         return date;
     }
@@ -277,10 +282,12 @@ public class BTBGService extends Service {
         } catch (Exception e){
             Log.i(TAG,"Notification Receiver was never registered therefore cannot be unregistered.");
         }
+
         queueHandler.removeCallbacks(queueRunnable);
         queueHandler = null;
         weatherHandler.removeCallbacks(weatherRunnable);
         weatherHandler = null;
+
         if(isConnected){
             bluetoothHandler.disconnect();
             Toast.makeText(BTBGService.this, "Disconnected.", Toast.LENGTH_SHORT).show();

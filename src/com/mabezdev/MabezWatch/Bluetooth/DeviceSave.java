@@ -10,16 +10,12 @@ import java.io.Serializable;
  */
 public class DeviceSave implements Serializable {
 
-    private transient BluetoothDevice btdev;
     private String deviceAddress;
     private String deviceName;
 
-    public DeviceSave(BluetoothDevice bt) {
-        btdev = bt;
-        if(btdev!=null){
-            deviceAddress = btdev.getAddress();
-            deviceName = btdev.getName();
-        }
+    public DeviceSave(String name, String mac) {
+        deviceName = name;
+        deviceAddress = mac;
     }
 
 
