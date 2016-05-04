@@ -280,7 +280,7 @@ public class BTBGService extends Service {
                 new SimpleDateFormat("dd MM yyyy HH:mm:ss");
         String[] date = new String[3];
         date[0] = DATE_TAG;
-        date[1] = ft.format(myDate);
+        date[1] = ft.format(myDate)+':';
         date[2] = END_TAG;
         return date;
     }

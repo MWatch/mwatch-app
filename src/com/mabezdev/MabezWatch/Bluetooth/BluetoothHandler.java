@@ -20,8 +20,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
-
-import com.mabezdev.MabezWatch.Activities.Connect;
+import com.mabezdev.MabezWatch.Activities.Main;
 
 public class BluetoothHandler {
     // scan bluetooth device
@@ -88,7 +87,7 @@ public class BluetoothHandler {
         if (!getBluetoothAdapter().isEnabled()) {
             Intent mIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             if(context instanceof Activity) {
-                ((Connect) context).startActivityForResult(mIntent, 1);
+                ((Main) context).startActivityForResult(mIntent, 1);
             }
         }else{
             setEnabled(true);
@@ -252,8 +251,12 @@ public class BluetoothHandler {
         // kill service
         mBLEService.close();
         //todo unreg recievers etc
-        context.unregisterReceiver(mGattUpdateReceiver);
-        context.unbindService(mServiceConnection);
+        try {
+            context.unregisterReceiver(mGattUpdateReceiver);
+            context.unbindService(mServiceConnection);
+        } catch (IllegalArgumentException e){
+            e.printStackTrace();
+        }
         //mHandler.removeCallbacks();
         mHandler = null;
     }

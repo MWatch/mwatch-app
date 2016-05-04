@@ -5,52 +5,38 @@
                 tools:context=".MainActivity" >
 
 
-
-    <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Quick Connect"
-            android:id="@+id/connectButton"
-            android:layout_marginBottom="23dp"
-            android:layout_alignParentBottom="true" android:layout_alignStart="@+id/scanButton"/>
     <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Push Notifications"
             android:id="@+id/notification"
-            android:layout_above="@+id/connectButton" android:layout_centerHorizontal="true"/>
+            android:layout_marginBottom="34dp" android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"/>
     <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/editText"
-            android:layout_above="@+id/addFilter" android:layout_alignParentLeft="true"/>
+            android:layout_centerVertical="true" android:layout_alignParentStart="true"/>
     <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Add filter"
             android:id="@+id/addFilter"
-            android:layout_above="@+id/notification" android:layout_alignParentStart="true"
-            android:layout_alignParentEnd="true"/>
+            android:layout_below="@+id/editText" android:layout_centerHorizontal="true"
+            android:layout_marginTop="25dp"/>
     <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Find MabezWatch"
             android:id="@+id/scanButton"
-            android:layout_alignParentTop="true" android:layout_centerHorizontal="true"/>
-    <ListView
+            android:layout_above="@+id/editText" android:layout_centerHorizontal="true"/>
+    <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/listView"
-            android:layout_centerHorizontal="true"
-            android:layout_below="@+id/scanButton" android:layout_above="@+id/notification"/>
-    <Button
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Pair"
-            android:id="@+id/pairButton" android:layout_alignBottom="@+id/notification"
-            android:layout_alignParentStart="true" android:layout_toStartOf="@+id/notification"/>
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:id="@+id/statusText" android:layout_alignParentTop="true" android:layout_centerHorizontal="true"
+            android:layout_marginTop="61dp" android:text="      Not\nConnected."/>
 
 </RelativeLayout>

@@ -4,18 +4,22 @@ package com.mabezdev.MabezWatch.Activities;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.content.*;
 import android.os.Bundle;
 import android.app.Activity;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 
 import java.util.ArrayList;
-import android.content.Intent;
-import android.content.IntentFilter;
+
+import android.os.IBinder;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.*;
 import com.mabezdev.MabezWatch.Bluetooth.BTBGService;
+import com.mabezdev.MabezWatch.Bluetooth.BluetoothHandler;
 import com.mabezdev.MabezWatch.Bluetooth.BluetoothUtil;
 import com.mabezdev.MabezWatch.Bluetooth.DeviceSave;
 import com.mabezdev.MabezWatch.R;
@@ -25,17 +29,22 @@ import com.mabezdev.MabezWatch.myNotificationListener;
 
 public class Main extends Activity {
 
-    private Button connectButton;
     private Button enablePush;
     private Button addFilter;
-    private Button pairButton;
+    private Button scanButton;
+    private TextView statusText;
     private EditText filterBox;
-    private NotificationReceiver nReceiver;
     private static ArrayList<Bundle> notificationQueue;
     private static ArrayList<String> filter;
     public static String BLUETOOTH_FILE;
     public static final String NOTIFICATION_FILTER = "com.mabez.GET_NOTIFICATIONS";
     private boolean isConnected = false;
+    private BTBGService myBTService;
+    private BluetoothAdapter myBluetoothAdapter;
+    private boolean isBound = false;
+    private boolean isFound = false;
+    private static final int REQUEST_ENABLE_BT = 1;
+    private BluetoothHandler bluetoothHandler;
 
 
     @Override
@@ -45,78 +54,91 @@ public class Main extends Activity {
 
         BLUETOOTH_FILE = getFilesDir()+"/preffered_device.bin";
 
+        BluetoothManager mng = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        // take an instance of BluetoothAdapter - Bluetooth radio
+        myBluetoothAdapter = BluetoothUtil.getDefaultAdapter(mng);
+
+        if(myBluetoothAdapter == null) {
+            Toast.makeText(getApplicationContext(),"Your device does not support Bluetooth",
+                    Toast.LENGTH_LONG).show();
+        } else {
+            BluetoothUtil.turnOnBluetooth(myBluetoothAdapter);
+        }
+
         notificationQueue = new ArrayList<Bundle>();
         filter = new ArrayList<String>();
         //startListening for notifications
         startService(new Intent(getBaseContext(),myNotificationListener.class));
+
+
+
+        bluetoothHandler = new BluetoothHandler(this);
+
         //setup UI components
         setupUI();
 
-        //register custom receiver to communication with the notification service listener.
-        nReceiver = new NotificationReceiver();
-        IntentFilter filter = new IntentFilter();
 
-        filter.addAction(NOTIFICATION_FILTER);
-        registerReceiver(nReceiver,filter);
 
 
     }
-
-    @Deprecated
-    public void addNotification(Bundle notification){
-        notificationQueue.add(notification);
-        printNotificationQueue();
-    }
-    @Deprecated
-    public static ArrayList<Bundle> getNotificationQueue(){
-        return notificationQueue;
-    }
-
-    @Deprecated
-    public static void removeNotifications(ArrayList e){
-        notificationQueue.removeAll(e);
-    }
-
-    @Deprecated
-    public void printNotificationQueue(){
-        for(Bundle extras : notificationQueue){
-            System.out.println("Package: " + extras.getString("PKG"));
-            System.out.println("Title: " + extras.getString("TITLE"));
-            System.out.println("Text: " + extras.getString("TEXT"));
-        }
-        System.out.println("Number of Notifications: "+notificationQueue.size());
-    }
-
-
 
     public void setupUI(){
 
-        /*autoConnect = (Switch) findViewById(R.id.connectSwitch);
-        autoConnect.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        statusText = (TextView) findViewById(R.id.statusText);
+
+        scanButton = (Button) findViewById(R.id.scanButton);
+
+        scanButton.setOnClickListener(new OnClickListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                Intent autoGo = new Intent(getBaseContext(),BTBGService.class);
-                if(isChecked){
-                    //load saved device address
-                    DeviceSave store = (DeviceSave) ObjectReader.readObject(BLUETOOTH_FILE);
-                    if(store != null) {
-                        BluetoothUtil.setChosenDeviceName(store.getDeviceName());
-                        BluetoothUtil.setChosenDeviceMac(store.getDeviceAddress());
-                        startService(autoGo);
-                        autoConnect.setText("Connected");
-                    } else {
-                        autoConnect.setChecked(false);
-                        Toast.makeText(getBaseContext(),"No device stored! Connect manually first!",Toast.LENGTH_SHORT).show();
-                    }
+            public void onClick(View v) {
+               // scan and look for MabezWatch in the name
+                if(!isConnected) {
+                    bluetoothHandler.scanLeDevice(true);
                 } else {
-                    stopService(autoGo);
-                    autoConnect.setText("Quick Connect");
+                    killService();
+                    unbindService(myConnection);
+                }
+
+            }
+        });
+
+        bluetoothHandler.setOnScanListener(new BluetoothHandler.OnScanListener() {
+            @Override
+            public void onScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
+                if(device!=null) {
+                    if(device.getName()!=null){
+                        if (device.getName().equals("MabezWatch")) {
+                            if (!isFound) {
+                                //bind service here
+                                BluetoothUtil.setChosenDeviceMac(device.getAddress());
+                                BluetoothUtil.setChosenDeviceName(device.getName());
+                                isFound = true;
+                                Intent btIntent = new Intent(getBaseContext(), BTBGService.class);
+                                startService(btIntent);
+                                bindService(btIntent, myConnection, Context.BIND_AUTO_CREATE);
+                            }
+
+                        }
+                        Log.i("Main", "Found BLE Device with name: " + device.getName());
+                    }
                 }
             }
-        });*/
+
+            @Override
+            public void onScanFinished() {
+                //if we found it say so if not say
+                if (!isFound){
+                    Toast.makeText(getBaseContext(), "No MabezWatch Found.", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getBaseContext(), "Found MabezWatch.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
 
         filterBox = (EditText) findViewById(R.id.editText);
+
+        filterBox.setVisibility(View.INVISIBLE);
 
         addFilter = (Button) findViewById(R.id.addFilter);
         addFilter.setOnClickListener(new OnClickListener() {
@@ -128,27 +150,10 @@ public class Main extends Activity {
             }
         });
 
+        addFilter.setVisibility(View.INVISIBLE);
 
-        connectButton = (Button) findViewById(R.id.connectButton);
-        connectButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(isConnected){
-                    connectButton.setText("Disconnect");
-                } else {
-                    connectButton.setText("Connect");
-                }
-                //stopService(new Intent(getBaseContext(), BTBGService.class));
-            }
-        });
 
-        pairButton = (Button) findViewById(R.id.pairButton);
-        pairButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(Main.this,Connect.class));
-            }
-        });
+
         /*
         Debugging tool - >
          */
@@ -167,6 +172,14 @@ public class Main extends Activity {
         });
 
 
+    }
+
+    private void killService() {
+        Log.i("MAIN","Disconnecting service.");
+        myBTService.stopSelf();
+        unbindService(myConnection);
+        isFound = false;
+        isBound = false;
     }
 
     private void showNotification(String eventtext, Context ctx) {
@@ -190,35 +203,80 @@ public class Main extends Activity {
     }
 
 
+    private ServiceConnection myConnection = new ServiceConnection() {
+
+        public void onServiceConnected(ComponentName className,
+                                       IBinder service) {
+            BTBGService.MyLocalBinder binder = (BTBGService.MyLocalBinder) service;
+            myBTService = binder.getService();
+            isBound = true;
+            Log.i("MAIN","Service is connected");
+
+            myBTService.setOnConnectedListener(new BTBGService.OnConnectedListener() {
+                @Override
+                public void onConnected() {
+                    isConnected = true;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            scanButton.setText("Disconnect");
+                            statusText.setText("Connected\n         to\nMabezWatch.");
+                        }
+                    });
+                }
+
+                @Override
+                public void onDisconnected() {
+                    isConnected = false;
+                    killService();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            scanButton.setText("Find MabezWatch");
+                            statusText.setText("    Not\nConnected.");
+                        }
+                    });
+                }
+            });
+        }
+
+        public void onServiceDisconnected(ComponentName arg0){
+            if (isBound) {
+                unbindService(myConnection);
+                isBound = false;
+                isFound = false;
+            }
+        }
+
+    };
+
+
     @Override
     protected void onDestroy() {
         // TODO Auto-generated method stub
         super.onDestroy();
-        try {
-            unregisterReceiver(nReceiver);
-        }catch (Exception e){
-            System.out.println("bReceiver was never used therefore not unregistered");
+        if (isBound) {
+            unbindService(myConnection);
+            isBound = false;
         }
 
     }
 
-    class NotificationReceiver extends BroadcastReceiver{
-        @Override
-
-        public void onReceive(Context context, Intent intent) {
-            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            Bundle extras = intent.getExtras();
-            if(extras.getString("PKG")!=null) {
-                if(!filter.contains(extras.getString("PKG"))) {
-                    Main.this.addNotification(extras);
-                } else {
-                    System.out.println("Notification from package '"+extras.getString("PKG")+"' has been filtered.");
-                }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(requestCode == REQUEST_ENABLE_BT){
+            if(myBluetoothAdapter.isEnabled()) {
+                Toast.makeText(getBaseContext(),"Bluetooth activated.",Toast.LENGTH_SHORT).show();
             } else {
-                System.out.println("Null Notification received.");
+                Toast.makeText(getBaseContext(),"Bluetooth deactivated.",Toast.LENGTH_SHORT).show();
             }
         }
+    }
 
+    public void off(){
+        myBluetoothAdapter.disable();
+        Toast.makeText(getApplicationContext(),"Bluetooth turned off",
+                Toast.LENGTH_LONG).show();
     }
 
 }
