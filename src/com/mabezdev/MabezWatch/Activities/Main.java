@@ -27,7 +27,7 @@ import com.mabezdev.MabezWatch.Util.ObjectReader;
 import com.mabezdev.MabezWatch.myNotificationListener;
 
 
-public class Main extends Activity {
+public class Main extends Activity { // extend AppCompatActivity when we need
 
     private Button enablePush;
     private Button addFilter;
@@ -96,7 +96,6 @@ public class Main extends Activity {
                     bluetoothHandler.scanLeDevice(true);
                 } else {
                     killService();
-                    unbindService(myConnection);
                 }
 
             }
@@ -130,7 +129,8 @@ public class Main extends Activity {
                 if (!isFound){
                     Toast.makeText(getBaseContext(), "No MabezWatch Found.", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(getBaseContext(), "Found MabezWatch.", Toast.LENGTH_SHORT).show();
+                    //dont really need to print this to the user
+                    //Toast.makeText(getBaseContext(), "Found MabezWatch.", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -175,14 +175,18 @@ public class Main extends Activity {
     }
 
     private void killService() {
-        Log.i("MAIN","Disconnecting service.");
-        myBTService.stopSelf();
-        unbindService(myConnection);
-        isFound = false;
-        isBound = false;
+        if(isBound) {
+            Log.i("MAIN", "Disconnecting service.");
+            myBTService.stopSelf();
+            unbindService(myConnection);
+            isFound = false;
+            isBound = false;
+        } else {
+            Log.i("MAIN", "Can't disconnect, not connected.");
+        }
     }
 
-    private void showNotification(String eventtext, Context ctx) {
+    private void showNotification(String eventText, Context ctx) {
 
         // Set the icon, scrolling text and timestamp
         Notification notification = new Notification(R.drawable.ic_launcher,
@@ -194,7 +198,7 @@ public class Main extends Activity {
                 new Intent(ctx, Main.class), 0);
 
         // Set the info for the views that show in the notification panel.
-        notification.setLatestEventInfo(ctx, "Titlethatsisover15characterslong", eventtext,
+        notification.setLatestEventInfo(ctx, "Titlethatsisover15characterslong", eventText,
                 contentIntent);
 
         // Send the notification.

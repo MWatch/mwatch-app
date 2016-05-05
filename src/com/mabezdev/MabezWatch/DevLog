@@ -1,4 +1,3 @@
-Need to undergo some restructuring off this app, leaks and crashes everywhere.
 
 Todo:
     - Condense the bt services into one service
@@ -9,9 +8,14 @@ Todo:
     - filters check box
     - settings page
     - override onPause and onResume Activity methods to make sure it says the current state of connection on resume
+    - add settings page
+    - setting options:
+        - if disconnected, turn off bluetooth setting
+        -
+    - check EXTRA_BIG_TEXT, EXTRA_TEXT,EXTRA_TEXT,EXTRA_TEXT_LINES and all other possibles,
+      to get all the data we can from the notifications
+    -
 
 
 Bug List:
-    - [Major] Crash after disconnecting and trying to reconnect
-    - [Major] Crash when turning on bluetooth [FIXED]
-    - [Minor] No way of disconnecting on the phone currently
+    -

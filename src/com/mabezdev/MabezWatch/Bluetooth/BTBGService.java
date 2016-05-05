@@ -12,6 +12,8 @@ import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 import android.widget.Toast;
 import com.mabezdev.MabezWatch.Activities.Main;
@@ -53,6 +55,11 @@ public class BTBGService extends Service {
     private static final int DATA_LENGTH = 170;
     private final IBinder myBinder = new MyLocalBinder();
     private OnConnectedListener connectionListener;
+    private static final int NOTIFICATION_ID = 4444;
+    private NotificationCompat.Builder mBuilder;
+    private NotificationManager mNotificationManager;
+    private int time = 0;
+    private Handler timerHandler;
 
 
     public interface OnConnectedListener{
@@ -93,20 +100,30 @@ public class BTBGService extends Service {
                 if (isConnected) {
                     Log.i("TRANSMIT", "Connected.");
                     BTBGService.this.isConnected = true;
-                    showNotification("Connected to MabezWatch ("+BluetoothUtil.getChosenDeviceMac()+").");
+                    showNotification("Connected to MabezWatch ("+BluetoothUtil.getChosenDeviceMac()+").",false);
                     //save device for quick connect
                     BluetoothUtil.storeDevice(BluetoothUtil.getChosenDeviceName(),BluetoothUtil.getChosenDeviceMac());
                     if(connectionListener!=null){
                         connectionListener.onConnected();
+                        timerHandler = new Handler();
+                        timerHandler.postDelayed(timerRunnable,0);
                     }
 
                 } else {
                     if(connectionListener!=null){
                         connectionListener.onDisconnected();
+                        if(timerHandler!=null) {
+                            timerHandler.removeCallbacks(timerRunnable);
+                            timerHandler = null;
+                        }
                     }
+                    removeNotification();
+                    int hours = time / 3600;
+                    int minutes = (time % 3600) / 60;
+                    int seconds = time % 60;
+                    showNotification("Disconnected, connection lasted:\n"+String.format("%02d:%02d:%02d", hours, minutes, seconds),true);
                     Log.i("TRANSMIT","Disconnected.");
                     BTBGService.this.isConnected = false;
-                    showNotification("Disconnected from MabezWatch.");
                     stopSelf();
                 }
             }});
@@ -155,23 +172,38 @@ public class BTBGService extends Service {
         this.connectionListener = l;
     }
 
-    private void showNotification(String eventText) {
-        //todo replace with NotificationCompat
-        // Set the icon, scrolling text and timestamp
-        Notification notification = new Notification(R.drawable.ic_launcher,
-                "MabezWatch", System.currentTimeMillis());
+    private void showNotification(String text, boolean canClear){
+        mBuilder =
+                new NotificationCompat.Builder(this)
+                        .setSmallIcon(R.drawable.ic_launcher)
+                        .setContentTitle("MabezWatch")
+                        .setContentText(text)
+                        .setOngoing(!canClear);
+        // Creates an explicit intent for an Activity in your app
+        Intent resultIntent = new Intent(this, Main.class);
 
-        // The PendingIntent to launch our activity if the user selects this
-        // notification
-        PendingIntent contentIntent = PendingIntent.getActivity(BTBGService.this, 0,
-                new Intent(BTBGService.this, Main.class), 0);
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        stackBuilder.addParentStack(Main.class);
 
-        // Set the info for the views that show in the notification panel.
-        notification.setLatestEventInfo(BTBGService.this, "MabezWatch", eventText,
-                contentIntent);
-        // Send the notification.
-        NotificationManager mng = (NotificationManager)BTBGService.this.getSystemService(Context.NOTIFICATION_SERVICE);
-        mng.notify("Title", notificationID, notification);
+        // Adds the Intent that starts the Activity to the top of the stack
+        stackBuilder.addNextIntent(resultIntent);
+        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
+        mBuilder.setContentIntent(resultPendingIntent);
+        mNotificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        // mId allows you to update the notification later on.
+        mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
+    }
+
+    private void updateNotification(String text){//take in time here and connected status
+        mBuilder.setSubText(text);
+        mNotificationManager.notify(NOTIFICATION_ID,mBuilder.build());
+    }
+
+
+
+    private void removeNotification(){
+        mNotificationManager.cancel(NOTIFICATION_ID);
     }
 
     private void transmit(String[] formattedData){
@@ -201,6 +233,19 @@ public class BTBGService extends Service {
             }
             weatherHandler.postDelayed(this, WEATHER_REFRESH_TIME);//get new data every @WEATHER_REFRESH_TIME seconds.
         }
+    };
+
+    private Runnable timerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            time += 1;
+            int hours = time / 3600;
+            int minutes = (time % 3600) / 60;
+            int seconds = time % 60;
+            updateNotification(String.format("%02d:%02d:%02d", hours, minutes, seconds));
+            timerHandler.postDelayed(timerRunnable,1000);
+        }
+
     };
 
     private Runnable queueRunnable = new Runnable() {
@@ -299,11 +344,17 @@ public class BTBGService extends Service {
 
     @Override
     public void onDestroy(){
+        removeNotification(); // get rid of out notification
         System.out.println("Stopping BTBGService");
         try {
             unregisterReceiver(notificationReceiver);
         } catch (Exception e){
             Log.i(TAG,"Notification Receiver was never registered therefore cannot be unregistered.");
+        }
+
+        if(timerHandler!=null){
+            timerHandler.removeCallbacks(timerRunnable);
+            timerHandler = null;
         }
 
         queueHandler.removeCallbacks(queueRunnable);
@@ -346,7 +397,7 @@ public class BTBGService extends Service {
         protected void onPreExecute()
         {
             isTransmitting = true;
-            Log.i(TAG, "Transmitting data...");
+            Log.i(TAG, "Transmitting data with TAG: "+data[0]);
         }
 
         @Override
