@@ -1,6 +1,5 @@
 package com.mabezdev.MabezWatch;
 
-import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +9,7 @@ import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
 import com.mabezdev.MabezWatch.Activities.Main;
+import com.mabezdev.MabezWatch.Bluetooth.BTBGService;
 
 import java.util.ArrayList;
 
@@ -18,7 +18,7 @@ import java.util.ArrayList;
  */
 public class myNotificationListener extends NotificationListenerService {
 
-    private NLServiceReceiver nlservicereciver;
+    private NLServiceReceiver nlServiceReceiver;
     //private final IBinder mBinder = new LocalBinder();
     private ArrayList<String> packageFilter = new ArrayList<String>();
 
@@ -26,10 +26,10 @@ public class myNotificationListener extends NotificationListenerService {
     public void onCreate(){
         super.onCreate();
         Log.i("NOTIFICATION_SERVICE","Started Notification Service");
-        nlservicereciver = new NLServiceReceiver();
+        nlServiceReceiver = new NLServiceReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction(Main.NOTIFICATION_FILTER);
-        registerReceiver(nlservicereciver,filter);
+        registerReceiver(nlServiceReceiver,filter);
 
         //stop system crap
         packageFilter.add("android");
@@ -37,7 +37,7 @@ public class myNotificationListener extends NotificationListenerService {
 
     @Override
     public void onDestroy() {
-        unregisterReceiver(nlservicereciver);
+        unregisterReceiver(nlServiceReceiver);
         super.onDestroy();
     }
 
@@ -47,17 +47,19 @@ public class myNotificationListener extends NotificationListenerService {
         //todo check EXTRA_BIG_TEXT, EXTRA_TEXT,EXTRA_TEXT,EXTRA_TEXT_LINES and all other possibles to get all the data we can
         Intent sendNewToApp = new Intent(Main.NOTIFICATION_FILTER);
         Bundle extras = sbn.getNotification().extras;
-        if(!packageFilter.contains(sbn.getPackageName()) && sbn.isClearable()) {
+        if(sbn.getId()== BTBGService.NOTIFICATION_ID){
+            //so we dont spam the log with out timer notification
+        } else if(!packageFilter.contains(sbn.getPackageName()) && sbn.isClearable()) {
             sendNewToApp.putExtra("PKG", sbn.getPackageName());
             if(extras.getString("android.title")!=null) {
                 sendNewToApp.putExtra("TITLE", extras.getString("android.title"));
             } else {
-                sendNewToApp.putExtra("TITLE", sbn.getNotification().tickerText.toString());
+                sendNewToApp.putExtra("TITLE", sbn.getNotification().tickerText);
             }
             if (extras.getCharSequence("android.text") != null) {
-                sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.text").toString());
+                sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.text"));
             } else {
-                sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.textLines").toString());
+                sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.textLines"));
             }
             sendBroadcast(sendNewToApp);
         } else {

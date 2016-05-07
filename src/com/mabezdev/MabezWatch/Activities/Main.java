@@ -92,10 +92,15 @@ public class Main extends Activity { // extend AppCompatActivity when we need
             @Override
             public void onClick(View v) {
                // scan and look for MabezWatch in the name
-                if(!isConnected) {
-                    bluetoothHandler.scanLeDevice(true);
+                if(myBluetoothAdapter.isEnabled()) { // check if bluetooth is enabled
+                    if (!isConnected) {
+                        bluetoothHandler.scanLeDevice(true);
+                    } else {
+                        killService();
+                    }
                 } else {
-                    killService();
+                    //turn on bluetooth
+                    myBluetoothAdapter.enable();
                 }
 
             }
@@ -128,9 +133,6 @@ public class Main extends Activity { // extend AppCompatActivity when we need
                 //if we found it say so if not say
                 if (!isFound){
                     Toast.makeText(getBaseContext(), "No MabezWatch Found.", Toast.LENGTH_SHORT).show();
-                } else {
-                    //dont really need to print this to the user
-                    //Toast.makeText(getBaseContext(), "Found MabezWatch.", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -154,6 +156,7 @@ public class Main extends Activity { // extend AppCompatActivity when we need
 
 
 
+
         /*
         Debugging tool - >
          */
@@ -161,11 +164,6 @@ public class Main extends Activity { // extend AppCompatActivity when we need
         enablePush.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                /*Log.i("NOTICE","Requesting Push notifications");
-                Intent i = new Intent(NOTIFICATION_FILTER);
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                i.putExtra("command","list");
-                sendBroadcast(i);*/
                 showNotification("The following text is over 128 chars: Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old.",
                         Main.this);
             }
@@ -245,11 +243,7 @@ public class Main extends Activity { // extend AppCompatActivity when we need
         }
 
         public void onServiceDisconnected(ComponentName arg0){
-            if (isBound) {
-                unbindService(myConnection);
-                isBound = false;
-                isFound = false;
-            }
+            killService();
         }
 
     };
@@ -257,12 +251,8 @@ public class Main extends Activity { // extend AppCompatActivity when we need
 
     @Override
     protected void onDestroy() {
-        // TODO Auto-generated method stub
         super.onDestroy();
-        if (isBound) {
-            unbindService(myConnection);
-            isBound = false;
-        }
+        killService();
 
     }
 

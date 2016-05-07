@@ -27,14 +27,14 @@ public class BluetoothHandler {
     private BluetoothAdapter mBluetoothAdapter;
     private boolean mEnabled = false;
     private boolean mScanning = false;
-    private static final long SCAN_PERIOD = 2000;
+    private static final long SCAN_PERIOD = 5000; //scan for 5 seconds
     private String mCurrentConnectedBLEAddr;
 
     // connect bluetooth device
     private BLEService mBLEService;
     private String mDeviceAddress = null;
     private boolean mConnected = false;
-    private OnRecievedDataListener onRecListener;
+    private onReceivedDataListener onRecListener;
     private OnConnectedListener onConnectedListener;
     private OnScanListener onScanListener;
     private OnReadyForTransmissionListener onReadyForTransmissionListener;
@@ -48,8 +48,8 @@ public class BluetoothHandler {
     // 00001800-0000-1000-8000-00805f9b34fb service test
     private Context context;
 
-    public interface OnRecievedDataListener{
-        public void onRecievedData(byte[] bytes);
+    public interface onReceivedDataListener {
+        public void onReceivedData(byte[] bytes);
     };
 
     public interface OnReadyForTransmissionListener{
@@ -173,12 +173,12 @@ public class BluetoothHandler {
                 byte[] bytes = intent.getByteArrayExtra(BLEService.EXTRA_DATA);
                 //System.out.println("len:"+dataString.length()+"data:"+dataString);
                 if(onRecListener != null)
-                    onRecListener.onRecievedData(bytes);
+                    onRecListener.onReceivedData(bytes);
             }
         }
     };
 
-    public void setOnRecievedDataListener(OnRecievedDataListener l){
+    public void setOnReceivedDataListener(onReceivedDataListener l){
         onRecListener = l;
     }
 

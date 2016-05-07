@@ -18,6 +18,7 @@ import android.util.Log;
 import android.widget.Toast;
 import com.mabezdev.MabezWatch.Activities.Main;
 import com.mabezdev.MabezWatch.R;
+import com.mabezdev.MabezWatch.Util.NotificationUtils;
 import zh.wang.android.apis.yweathergetter4a.WeatherInfo;
 import zh.wang.android.apis.yweathergetter4a.YahooWeather;
 import zh.wang.android.apis.yweathergetter4a.YahooWeatherInfoListener;
@@ -55,7 +56,7 @@ public class BTBGService extends Service {
     private static final int DATA_LENGTH = 170;
     private final IBinder myBinder = new MyLocalBinder();
     private OnConnectedListener connectionListener;
-    private static final int NOTIFICATION_ID = 4444;
+    public static final int NOTIFICATION_ID = 4444;
     private NotificationCompat.Builder mBuilder;
     private NotificationManager mNotificationManager;
     private int time = 0;
@@ -100,7 +101,7 @@ public class BTBGService extends Service {
                 if (isConnected) {
                     Log.i("TRANSMIT", "Connected.");
                     BTBGService.this.isConnected = true;
-                    showNotification("Connected to MabezWatch ("+BluetoothUtil.getChosenDeviceMac()+").",false);
+                    NotificationUtils.showNotification(BTBGService.this,"Connected to MabezWatch ("+BluetoothUtil.getChosenDeviceMac()+").",false,false,NOTIFICATION_ID);
                     //save device for quick connect
                     BluetoothUtil.storeDevice(BluetoothUtil.getChosenDeviceName(),BluetoothUtil.getChosenDeviceMac());
                     if(connectionListener!=null){
@@ -117,11 +118,11 @@ public class BTBGService extends Service {
                             timerHandler = null;
                         }
                     }
-                    removeNotification();
+                    NotificationUtils.removeNotification(NOTIFICATION_ID);
                     int hours = time / 3600;
                     int minutes = (time % 3600) / 60;
                     int seconds = time % 60;
-                    showNotification("Disconnected, connection lasted:\n"+String.format("%02d:%02d:%02d", hours, minutes, seconds),true);
+                    NotificationUtils.showNotification(BTBGService.this,"Disconnected, connection lasted:\n"+String.format("%02d:%02d:%02d", hours, minutes, seconds),true,true,1111);
                     Log.i("TRANSMIT","Disconnected.");
                     BTBGService.this.isConnected = false;
                     stopSelf();
@@ -172,39 +173,7 @@ public class BTBGService extends Service {
         this.connectionListener = l;
     }
 
-    private void showNotification(String text, boolean canClear){
-        mBuilder =
-                new NotificationCompat.Builder(this)
-                        .setSmallIcon(R.drawable.ic_launcher)
-                        .setContentTitle("MabezWatch")
-                        .setContentText(text)
-                        .setOngoing(!canClear);
-        // Creates an explicit intent for an Activity in your app
-        Intent resultIntent = new Intent(this, Main.class);
 
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addParentStack(Main.class);
-
-        // Adds the Intent that starts the Activity to the top of the stack
-        stackBuilder.addNextIntent(resultIntent);
-        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
-        mBuilder.setContentIntent(resultPendingIntent);
-        mNotificationManager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        // mId allows you to update the notification later on.
-        mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
-    }
-
-    private void updateNotification(String text){//take in time here and connected status
-        mBuilder.setSubText(text);
-        mNotificationManager.notify(NOTIFICATION_ID,mBuilder.build());
-    }
-
-
-
-    private void removeNotification(){
-        mNotificationManager.cancel(NOTIFICATION_ID);
-    }
 
     private void transmit(String[] formattedData){
         //delay between each statement it received individual
@@ -242,7 +211,7 @@ public class BTBGService extends Service {
             int hours = time / 3600;
             int minutes = (time % 3600) / 60;
             int seconds = time % 60;
-            updateNotification(String.format("%02d:%02d:%02d", hours, minutes, seconds));
+            NotificationUtils.updateNotification(String.format("%02d:%02d:%02d", hours, minutes, seconds),NOTIFICATION_ID);
             timerHandler.postDelayed(timerRunnable,1000);
         }
 
@@ -344,7 +313,7 @@ public class BTBGService extends Service {
 
     @Override
     public void onDestroy(){
-        removeNotification(); // get rid of out notification
+        NotificationUtils.removeNotification(NOTIFICATION_ID); // get rid of out notification
         System.out.println("Stopping BTBGService");
         try {
             unregisterReceiver(notificationReceiver);
