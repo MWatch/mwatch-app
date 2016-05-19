@@ -59,7 +59,7 @@ public class BTBGService extends Service {
     public static final int NOTIFICATION_ID = 4444;
     private NotificationCompat.Builder mBuilder;
     private NotificationManager mNotificationManager;
-    private int time = 0;
+    private long startTime = 0;
     private Handler timerHandler;
 
 
@@ -106,6 +106,7 @@ public class BTBGService extends Service {
                     BluetoothUtil.storeDevice(BluetoothUtil.getChosenDeviceName(),BluetoothUtil.getChosenDeviceMac());
                     if(connectionListener!=null){
                         connectionListener.onConnected();
+                        startTime = System.currentTimeMillis();
                         timerHandler = new Handler();
                         timerHandler.postDelayed(timerRunnable,0);
                     }
@@ -119,9 +120,10 @@ public class BTBGService extends Service {
                         }
                     }
                     NotificationUtils.removeNotification(NOTIFICATION_ID);
-                    int hours = time / 3600;
-                    int minutes = (time % 3600) / 60;
-                    int seconds = time % 60;
+                    long time = calculateTime();
+                    long hours = time / 3600;
+                    long minutes = (time % 3600) / 60;
+                    long seconds = time % 60;
                     NotificationUtils.showNotification(BTBGService.this,"Disconnected, connection lasted:\n"+String.format("%02d:%02d:%02d", hours, minutes, seconds),true,true,1111);
                     Log.i("TRANSMIT","Disconnected.");
                     BTBGService.this.isConnected = false;
@@ -207,10 +209,10 @@ public class BTBGService extends Service {
     private Runnable timerRunnable = new Runnable() {
         @Override
         public void run() {
-            time += 1;
-            int hours = time / 3600;
-            int minutes = (time % 3600) / 60;
-            int seconds = time % 60;
+            long time = calculateTime();
+            long hours = time / 3600;
+            long minutes = (time % 3600) / 60;
+            long seconds = time % 60;
             NotificationUtils.updateNotification(String.format("%02d:%02d:%02d", hours, minutes, seconds),NOTIFICATION_ID);
             timerHandler.postDelayed(timerRunnable,1000);
         }
@@ -230,12 +232,24 @@ public class BTBGService extends Service {
                         e.printStackTrace();
                     }
                     data = transmitQueue.poll();//remove from queue and put it here
-                    new TransmitTask().execute();
+                    if(data!=null) {
+                        new TransmitTask().execute();
+                    } else {
+                        Log.i(TAG,"Transmit data is null, not transmitting.");
+                    }
                 }
             }
             queueHandler.postDelayed(this, 1000);
         }
     };
+
+    private long calculateTime(){
+        if(startTime !=0){
+            return ((System.currentTimeMillis() - startTime)/1000);
+        } else {
+            return 0;
+        }
+    }
 
     private String[] formatWeatherData(String day,String temp,String forecast){
         String[] data = new String[7];
@@ -250,42 +264,45 @@ public class BTBGService extends Service {
     }
 
     private String[] formatNotificationData(String pkg, String title, String text){
-        //todo need to check that the text is not too big and need to add a phase to read
         /*
             Data struct on teensy:
                 -Package name = 15 characters
                 -Title = 15 characters
                 -Text = 150 characters
          */
-        ArrayList<String> format = new ArrayList<String>();
-        if(pkg.length() >= 15){
-            pkg = pkg.substring(0,14);
-        }
-        if(title.length() >= 15){
-            title = title.substring(0,14);
-        }
-        format.add(NOTIFICATION_TAG+pkg);
-        format.add(TITLE_TAG+title+CLOSE_TAG);
-        int charIndex = 0;
-        String temp = "";
-        if(text.length() > CHUNK_SIZE) {
-            for (int i=0; i < DATA_LENGTH; i++) { //max 150 for message + 20 chars for tags
-                if (charIndex >= CHUNK_SIZE) {//send in chunks of 64 chars
-                    format.add(DATA_INTERVAL_TAG+temp);
-                    temp = "";
-                    charIndex = 0;
-                } else {
-                    temp += text.charAt(i);
-                }
-                charIndex++;
+        if(pkg!=null && title!=null && text!=null) {
+            ArrayList<String> format = new ArrayList<String>();
+            if (pkg.length() >= 15) {
+                pkg = pkg.substring(0, 14);
             }
-            //this adds the last piece of data if it is under 64 characters
-            format.add(DATA_INTERVAL_TAG+temp);
+            if (title.length() >= 15) {
+                title = title.substring(0, 14);
+            }
+            format.add(NOTIFICATION_TAG + pkg);
+            format.add(TITLE_TAG + title + CLOSE_TAG);
+            int charIndex = 0;
+            String temp = "";
+            if (text.length() > CHUNK_SIZE) {
+                for (int i = 0; i < DATA_LENGTH; i++) { //max 150 for message + 20 chars for tags
+                    if (charIndex >= CHUNK_SIZE) {//send in chunks of 64 chars
+                        format.add(DATA_INTERVAL_TAG + temp);
+                        temp = "";
+                        charIndex = 0;
+                    } else {
+                        temp += text.charAt(i);
+                    }
+                    charIndex++;
+                }
+                //this adds the last piece of data if it is under 64 characters
+                format.add(DATA_INTERVAL_TAG + temp);
+            } else {
+                format.add(DATA_INTERVAL_TAG + text);
+            }
+            format.add(END_TAG);
+            return format.toArray(new String[format.size()]);
         } else {
-            format.add(DATA_INTERVAL_TAG+text);
+            return null;
         }
-        format.add(END_TAG);
-        return format.toArray(new String[format.size()]);
     }
 
     private String[] formatDateData(){
@@ -351,9 +368,9 @@ public class BTBGService extends Service {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            String pkgName = intent.getStringExtra("PKG");
-            String title = intent.getStringExtra("TITLE");
-            String text = intent.getStringExtra("TEXT");
+            String pkgName = intent.getStringExtra("PKG").toString();
+            String title = intent.getStringExtra("TITLE").toString();
+            String text = intent.getStringExtra("TEXT").toString();
             //now package this up and add tot he transmit queue
             transmitQueue.add(formatNotificationData(pkgName,title,text));
         }
@@ -370,7 +387,7 @@ public class BTBGService extends Service {
         }
 
         @Override
-        protected Void doInBackground(Void... devices) //while the progress dialog is shown, the connection is done in background
+        protected Void doInBackground(Void... devices)
         {
             transmit(data);
             return null;

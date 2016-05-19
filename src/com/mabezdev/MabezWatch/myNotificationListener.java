@@ -43,13 +43,13 @@ public class myNotificationListener extends NotificationListenerService {
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-
         //todo check EXTRA_BIG_TEXT, EXTRA_TEXT,EXTRA_TEXT,EXTRA_TEXT_LINES and all other possibles to get all the data we can
         Intent sendNewToApp = new Intent(Main.NOTIFICATION_FILTER);
         Bundle extras = sbn.getNotification().extras;
         if(sbn.getId()== BTBGService.NOTIFICATION_ID){
             //so we dont spam the log with out timer notification
-        } else if(!packageFilter.contains(sbn.getPackageName()) && sbn.isClearable()) {
+            Log.i("NOTIFICATION_SERVICE","Notification from package "+sbn.getPackageName()+" has the same ID as our notification!");
+        } else if(!(packageFilter.contains(sbn.getPackageName())) && sbn.isClearable()) {
             sendNewToApp.putExtra("PKG", sbn.getPackageName());
             if(extras.getString("android.title")!=null) {
                 sendNewToApp.putExtra("TITLE", extras.getString("android.title"));
@@ -57,7 +57,7 @@ public class myNotificationListener extends NotificationListenerService {
                 sendNewToApp.putExtra("TITLE", sbn.getNotification().tickerText);
             }
             if (extras.getCharSequence("android.text") != null) {
-                sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.text"));
+                sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.text").toString()); // add toStrings once we know what ones to use
             } else {
                 sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.textLines"));
             }

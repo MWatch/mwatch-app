@@ -34,7 +34,6 @@ public class Main extends Activity { // extend AppCompatActivity when we need
     private Button scanButton;
     private TextView statusText;
     private EditText filterBox;
-    private static ArrayList<Bundle> notificationQueue;
     private static ArrayList<String> filter;
     public static String BLUETOOTH_FILE;
     public static final String NOTIFICATION_FILTER = "com.mabez.GET_NOTIFICATIONS";
@@ -65,7 +64,7 @@ public class Main extends Activity { // extend AppCompatActivity when we need
             BluetoothUtil.turnOnBluetooth(myBluetoothAdapter);
         }
 
-        notificationQueue = new ArrayList<Bundle>();
+        //notificationQueue = new ArrayList<Bundle>();
         filter = new ArrayList<String>();
         //startListening for notifications
         startService(new Intent(getBaseContext(),myNotificationListener.class));
@@ -95,6 +94,8 @@ public class Main extends Activity { // extend AppCompatActivity when we need
                 if(myBluetoothAdapter.isEnabled()) { // check if bluetooth is enabled
                     if (!isConnected) {
                         bluetoothHandler.scanLeDevice(true);
+                        statusText.setText(R.string.searching);
+                        statusText.setTextColor(getResources().getColor(R.color.searching));
                     } else {
                         killService();
                     }
@@ -133,6 +134,8 @@ public class Main extends Activity { // extend AppCompatActivity when we need
                 //if we found it say so if not say
                 if (!isFound){
                     Toast.makeText(getBaseContext(), "No MabezWatch Found.", Toast.LENGTH_SHORT).show();
+                    statusText.setText(R.string.Disconnected);
+                    statusText.setTextColor(getResources().getColor(R.color.disconnected));
                 }
             }
         });
@@ -221,8 +224,9 @@ public class Main extends Activity { // extend AppCompatActivity when we need
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            scanButton.setText("Disconnect");
-                            statusText.setText("Connected\n         to\nMabezWatch.");
+                            scanButton.setText(R.string.buttonConnected);
+                            statusText.setText(R.string.Connected); //"Connected\n         to\nMabezWatch."
+                            statusText.setTextColor(getResources().getColor(R.color.connected));
                         }
                     });
                 }
@@ -234,8 +238,9 @@ public class Main extends Activity { // extend AppCompatActivity when we need
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            scanButton.setText("Find MabezWatch");
-                            statusText.setText("    Not\nConnected.");
+                            scanButton.setText(R.string.buttonDisconnected);
+                            statusText.setText(R.string.Disconnected); //"    Not\nConnected."
+                            statusText.setTextColor(getResources().getColor(R.color.disconnected));
                         }
                     });
                 }

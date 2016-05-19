@@ -30,15 +30,18 @@
             style="?android:attr/buttonStyleSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Find MabezWatch"
+            android:text="@string/buttonDisconnected"
             android:id="@+id/scanButton"
             android:layout_above="@+id/editText" android:layout_centerHorizontal="true"/>
     <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textSize="30sp"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:id="@+id/statusText" android:layout_alignParentTop="true" android:layout_centerHorizontal="true"
-            android:layout_marginTop="61dp" android:text="      Not\nConnected."
-            android:textColor="@android:color/holo_blue_dark"/>
+            android:layout_marginTop="61dp" android:text="@string/Disconnected"
+            android:textAlignment="center"
+            android:textColor="@color/disconnected"
+            android:singleLine="false"/>
 
 </RelativeLayout>
