@@ -142,6 +142,16 @@ public class BTBGService extends Service {
             }
         });
 
+        /*
+            Here we will provide a API for the watch top request data
+         */
+        bluetoothHandler.setOnReceivedDataListener(new BluetoothHandler.onReceivedDataListener() {
+            @Override
+            public void onReceivedData(String data) {
+                Log.i(TAG,"Data from the Watch: "+data);
+            }
+        });
+
 
         //init data listener
         yahooWeatherInfoListener = new YahooWeatherInfoListener() {
@@ -282,8 +292,14 @@ public class BTBGService extends Service {
             format.add(TITLE_TAG + title + CLOSE_TAG);
             int charIndex = 0;
             String temp = "";
+            //make sure we don't array out of bounds
+            int len = text.length();
+            if(len > DATA_LENGTH){
+                len = DATA_LENGTH;
+            }
+            
             if (text.length() > CHUNK_SIZE) {
-                for (int i = 0; i < DATA_LENGTH; i++) { //max 150 for message + 20 chars for tags
+                for (int i = 0; i < len; i++) { //max 150 for message + 20 chars for tags
                     if (charIndex >= CHUNK_SIZE) {//send in chunks of 64 chars
                         format.add(DATA_INTERVAL_TAG + temp);
                         temp = "";

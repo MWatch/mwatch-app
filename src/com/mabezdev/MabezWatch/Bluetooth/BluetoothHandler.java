@@ -49,7 +49,7 @@ public class BluetoothHandler {
     private Context context;
 
     public interface onReceivedDataListener {
-        public void onReceivedData(byte[] bytes);
+        public void onReceivedData(String data);
     };
 
     public interface OnReadyForTransmissionListener{
@@ -169,11 +169,11 @@ public class BluetoothHandler {
                 if(mBLEService != null)
                     getCharacteristic(mBLEService.getSupportedGattServices());
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
-                // ���յ�������
-                byte[] bytes = intent.getByteArrayExtra(BLEService.EXTRA_DATA);
+                String data = intent.getStringExtra(BLEService.EXTRA_DATA);
+                Log.i("HANDLER","FOUND DATA FROM MODULE");
                 //System.out.println("len:"+dataString.length()+"data:"+dataString);
                 if(onRecListener != null)
-                    onRecListener.onReceivedData(bytes);
+                    onRecListener.onReceivedData(data);
             }
         }
     };
@@ -257,6 +257,9 @@ public class BluetoothHandler {
         } catch (IllegalArgumentException e){
             e.printStackTrace();
         }
+
+        mBLEService = null;
+        mConnected = false;
         //mHandler.removeCallbacks();
         mHandler = null;
     }

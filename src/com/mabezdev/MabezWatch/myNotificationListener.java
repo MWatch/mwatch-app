@@ -33,6 +33,7 @@ public class myNotificationListener extends NotificationListenerService {
 
         //stop system crap
         packageFilter.add("android");
+        packageFilter.add("mabezdev");//stop our stuff
     }
 
     @Override
@@ -46,10 +47,7 @@ public class myNotificationListener extends NotificationListenerService {
         //todo check EXTRA_BIG_TEXT, EXTRA_TEXT,EXTRA_TEXT,EXTRA_TEXT_LINES and all other possibles to get all the data we can
         Intent sendNewToApp = new Intent(Main.NOTIFICATION_FILTER);
         Bundle extras = sbn.getNotification().extras;
-        if(sbn.getId()== BTBGService.NOTIFICATION_ID){
-            //so we dont spam the log with out timer notification
-            Log.i("NOTIFICATION_SERVICE","Notification from package "+sbn.getPackageName()+" has the same ID as our notification!");
-        } else if(!(packageFilter.contains(sbn.getPackageName())) && sbn.isClearable()) {
+        if(!(packageFilter.contains(sbn.getPackageName())) && sbn.isClearable()) {
             sendNewToApp.putExtra("PKG", sbn.getPackageName());
             if(extras.getString("android.title")!=null) {
                 sendNewToApp.putExtra("TITLE", extras.getString("android.title"));
@@ -63,7 +61,9 @@ public class myNotificationListener extends NotificationListenerService {
             }
             sendBroadcast(sendNewToApp);
         } else {
-            Log.i("NOTIFICATION_SERVICE","Not pushing notification with package name: "+sbn.getPackageName());
+            if(!sbn.getPackageName().equals("com.mabezdev.MabezWatch")){
+                Log.i("NOTIFICATION_SERVICE","Not pushing notification with package name: "+sbn.getPackageName());
+            }
         }
     }
 

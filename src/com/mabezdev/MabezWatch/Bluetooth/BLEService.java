@@ -106,6 +106,7 @@ public class BLEService extends Service {
         public void onCharacteristicRead(BluetoothGatt gatt,
                                          BluetoothGattCharacteristic characteristic,
                                          int status) {
+            Log.i(TAG,"WE HAVE RECEIVED DATA FROM MODULE.");
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
                 System.out.println(TAG+":onCharRead "+gatt.getDevice().getName()
@@ -121,8 +122,8 @@ public class BLEService extends Service {
                                           BluetoothGattCharacteristic characteristic, int status) {
             // TODO Auto-generated method stub
             super.onCharacteristicWrite(gatt, characteristic, status);
-			/*
-			System.out.println(TAG+"onCharWrite "+gatt.getDevice().getName()
+
+			/*System.out.println(TAG+"onCharWrite "+gatt.getDevice().getName()
 			          +" write "
 			          +characteristic.getUuid().toString()
 			          +" -> "
@@ -134,13 +135,13 @@ public class BLEService extends Service {
         public void onCharacteristicChanged(BluetoothGatt gatt,
                                             BluetoothGattCharacteristic characteristic) {
             broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
-            /*
+
             System.out.println(TAG+":onCharRead "+gatt.getDevice().getName()
                     +" read "
                     +characteristic.getUuid().toString()
                     +" -> "
                     +new String(characteristic.getValue()));
-                    */
+
         }
     };
 
