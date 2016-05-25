@@ -1,5 +1,6 @@
 package com.mabezdev.MabezWatch;
 
+import android.app.Notification;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -34,6 +35,7 @@ public class myNotificationListener extends NotificationListenerService {
         //stop system crap
         packageFilter.add("android");
         packageFilter.add("mabezdev");//stop our stuff
+        packageFilter.add("clean");
     }
 
     @Override
@@ -44,20 +46,20 @@ public class myNotificationListener extends NotificationListenerService {
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        //todo check EXTRA_BIG_TEXT, EXTRA_TEXT,EXTRA_TEXT,EXTRA_TEXT_LINES and all other possibles to get all the data we can
+        //todo check EXTRA_BIG_TEXT, EXTRA_TEXT,EXTRA_TEXT_LINES and all other possibles to get all the data we can
         Intent sendNewToApp = new Intent(Main.NOTIFICATION_FILTER);
         Bundle extras = sbn.getNotification().extras;
         if(!(packageFilter.contains(sbn.getPackageName())) && sbn.isClearable()) {
             sendNewToApp.putExtra("PKG", sbn.getPackageName());
-            if(extras.getString("android.title")!=null) {
-                sendNewToApp.putExtra("TITLE", extras.getString("android.title"));
+            if(extras.getString(Notification.EXTRA_TITLE)!=null) {
+                sendNewToApp.putExtra("TITLE", extras.getString(Notification.EXTRA_TITLE)+""); // +"" is used to try and stop spannable string cast excetioonms
             } else {
-                sendNewToApp.putExtra("TITLE", sbn.getNotification().tickerText);
+                sendNewToApp.putExtra("TITLE", sbn.getNotification().tickerText+"");
             }
-            if (extras.getCharSequence("android.text") != null) {
-                sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.text").toString()); // add toStrings once we know what ones to use
+            if (extras.getCharSequence(Notification.EXTRA_TEXT) != null) {
+                sendNewToApp.putExtra("TEXT", extras.getCharSequence(Notification.EXTRA_TEXT)+""); // add toStrings once we know what ones to use
             } else {
-                sendNewToApp.putExtra("TEXT", extras.getCharSequence("android.textLines"));
+                sendNewToApp.putExtra("TEXT", extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT)+"");
             }
             sendBroadcast(sendNewToApp);
         } else {

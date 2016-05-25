@@ -106,14 +106,14 @@ public class BLEService extends Service {
         public void onCharacteristicRead(BluetoothGatt gatt,
                                          BluetoothGattCharacteristic characteristic,
                                          int status) {
-            Log.i(TAG,"WE HAVE RECEIVED DATA FROM MODULE.");
+            //System.out.println("BLESERVICE : WE HAVE RECEIVED DATA FROM MODULE.");
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
-                System.out.println(TAG+":onCharRead "+gatt.getDevice().getName()
+                /*System.out.println(TAG+":onCharRead "+gatt.getDevice().getName()
                         +" read "
                         +characteristic.getUuid().toString()
                         +" -> "
-                        +new String(characteristic.getValue()));
+                        +new String(characteristic.getValue()));*/
             }
         }
 
@@ -122,7 +122,6 @@ public class BLEService extends Service {
                                           BluetoothGattCharacteristic characteristic, int status) {
             // TODO Auto-generated method stub
             super.onCharacteristicWrite(gatt, characteristic, status);
-
 			/*System.out.println(TAG+"onCharWrite "+gatt.getDevice().getName()
 			          +" write "
 			          +characteristic.getUuid().toString()
@@ -136,12 +135,12 @@ public class BLEService extends Service {
                                             BluetoothGattCharacteristic characteristic) {
             broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
 
-            System.out.println(TAG+":onCharRead "+gatt.getDevice().getName()
+            /*System.out.println(TAG+":onCharRead "+gatt.getDevice().getName()
                     +" read "
                     +characteristic.getUuid().toString()
                     +" -> "
                     +new String(characteristic.getValue()));
-
+            */
         }
     };
 
@@ -162,26 +161,9 @@ public class BLEService extends Service {
                                  final BluetoothGattCharacteristic characteristic) {
         final Intent intent = new Intent(action);
 
-        // This is special handling for the Heart Rate Measurement profile.  Data parsing is
-        // carried out as per profile specifications:
-        // http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.heart_rate_measurement.xml
-        if (UUID_HM11_UUID.equals(characteristic.getUuid())) {
-            int flag = characteristic.getProperties();
-            int format = -1;
-            if ((flag & 0x01) != 0) {
-                format = BluetoothGattCharacteristic.FORMAT_UINT16;
-                Log.d(TAG, "Heart rate format UINT16.");
-            } else {
-                format = BluetoothGattCharacteristic.FORMAT_UINT8;
-                Log.d(TAG, "Heart rate format UINT8.");
-            }
-            final int heartRate = characteristic.getIntValue(format, 1);
-            Log.d(TAG, String.format("Received heart rate: %d", heartRate));
-            intent.putExtra(EXTRA_DATA, String.valueOf(heartRate));
-        } else {
-            // For all other profiles, writes the data formatted in HEX.
-            final byte[] data = characteristic.getValue();
-            if (data != null && data.length > 0) {
+        // For all other profiles, writes the data formatted in HEX.
+            String data = new String(characteristic.getValue());
+            if (data.length() > 0) {
                 //final StringBuilder stringBuilder = new StringBuilder(data.length);
                 //for(byte byteChar : data)
                 //    stringBuilder.append(String.format("%02X ", byteChar));
@@ -189,7 +171,6 @@ public class BLEService extends Service {
                 //intent.putExtra(EXTRA_DATA, new String(data) + "\n");
                 intent.putExtra(EXTRA_DATA, data);
             }
-        }
         sendBroadcast(intent);
     }
 

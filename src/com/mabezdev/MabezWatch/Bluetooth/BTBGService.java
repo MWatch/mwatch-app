@@ -136,8 +136,7 @@ public class BTBGService extends Service {
             public void OnReady(boolean isReady) {
                 // all data that needs to be sent at the start done here
                 Log.i(TAG,"Ready for transmission.");
-                yahooWeather.queryYahooWeatherByGPS(BTBGService.this,yahooWeatherInfoListener);
-
+                yahooWeather.queryYahooWeatherByGPS(getBaseContext(),yahooWeatherInfoListener);
                 transmitQueue.add(formatDateData());
             }
         });
@@ -149,6 +148,7 @@ public class BTBGService extends Service {
             @Override
             public void onReceivedData(String data) {
                 Log.i(TAG,"Data from the Watch: "+data);
+                //data will be received in 20 byte payloads so we will need to stitch the data together if its longer than that
             }
         });
 

@@ -170,8 +170,6 @@ public class BluetoothHandler {
                     getCharacteristic(mBLEService.getSupportedGattServices());
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
                 String data = intent.getStringExtra(BLEService.EXTRA_DATA);
-                Log.i("HANDLER","FOUND DATA FROM MODULE");
-                //System.out.println("len:"+dataString.length()+"data:"+dataString);
                 if(onRecListener != null)
                     onRecListener.onReceivedData(data);
             }
@@ -240,6 +238,9 @@ public class BluetoothHandler {
             if(onReadyForTransmissionListener!=null){
                 onReadyForTransmissionListener.OnReady(true);
             }
+
+            //enable notifications for gatt characteristic
+            mBLEService.setCharacteristicNotification(targetGattCharacteristic,true);
         } else {
             Log.i("HANDLER","Failed to find characteristic, retry.");
             mBLEService.disconnect();
