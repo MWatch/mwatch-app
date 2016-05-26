@@ -8,10 +8,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.AsyncTask;
-import android.os.Binder;
-import android.os.Handler;
-import android.os.IBinder;
+import android.os.*;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
@@ -61,6 +58,7 @@ public class BTBGService extends Service {
     private NotificationManager mNotificationManager;
     private long startTime = 0;
     private Handler timerHandler;
+    private boolean shouldSendNotifications = true;
 
 
     public interface OnConnectedListener{
@@ -149,6 +147,16 @@ public class BTBGService extends Service {
             public void onReceivedData(String data) {
                 Log.i(TAG,"Data from the Watch: "+data);
                 //data will be received in 20 byte payloads so we will need to stitch the data together if its longer than that
+                if(data.equals("<n>")){
+                    // this means we have run out of space on the smart watch an we should keep the rest in a queue to send when we get notified again
+                    Log.i(TAG,"MabezWatch Wants notifications again!");
+                    shouldSendNotifications = true;
+                } else if(data.equals("<e>")){
+                    Log.i(TAG,"MabezWatch Out of Space, Hold notifications in queue.");
+                    shouldSendNotifications = false;
+                } else if(data.equals(WEATHER_TAG)){
+                    //add the 5 day forecast to the queue
+                }
             }
         });
 
@@ -196,11 +204,7 @@ public class BTBGService extends Service {
                 Log.i(TAG,"Handler is null stopping transmission.");
                 stopSelf();
             }
-            try {
-                Thread.sleep(SEND_DELAY);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            SystemClock.sleep(SEND_DELAY);
         }
     }
 
@@ -236,17 +240,21 @@ public class BTBGService extends Service {
             if(!transmitQueue.isEmpty()){
                 if(!isTransmitting) { //wait till we are not transmitting
                     //delay between transmissions
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    data = transmitQueue.poll();//remove from queue and put it here
-                    if(data!=null) {
-                        new TransmitTask().execute();
+                    SystemClock.sleep(1000);
+
+                    if(transmitQueue.peek()[0].equals(NOTIFICATION_TAG) && !shouldSendNotifications) {
+                        if(transmitQueue.size() > 1) { //only rotate the queue if there other item to send in its place else just wait
+                            transmitQueue.add(transmitQueue.poll()); //move notification to the back of the queue
+                        }
                     } else {
-                        Log.i(TAG,"Transmit data is null, not transmitting.");
+                        data = transmitQueue.poll();//remove from queue and send it
+                        if(data!=null) {
+                            new TransmitTask().execute();
+                        } else {
+                            Log.i(TAG,"Transmit data is null, not transmitting.");
+                        }
                     }
+
                 }
             }
             queueHandler.postDelayed(this, 1000);
@@ -288,7 +296,8 @@ public class BTBGService extends Service {
             if (title.length() >= 15) {
                 title = title.substring(0, 14);
             }
-            format.add(NOTIFICATION_TAG + pkg);
+            format.add(NOTIFICATION_TAG);
+            format.add(pkg);
             format.add(TITLE_TAG + title + CLOSE_TAG);
             int charIndex = 0;
             String temp = "";

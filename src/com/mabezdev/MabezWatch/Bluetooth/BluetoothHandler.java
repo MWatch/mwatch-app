@@ -250,8 +250,10 @@ public class BluetoothHandler {
 
     public void close(){
         // kill service
-        mBLEService.close();
-        //todo unreg recievers etc
+        if(mBLEService!=null) {
+            mBLEService.close();
+            mBLEService = null;
+        }
         try {
             context.unregisterReceiver(mGattUpdateReceiver);
             context.unbindService(mServiceConnection);
@@ -259,7 +261,7 @@ public class BluetoothHandler {
             e.printStackTrace();
         }
 
-        mBLEService = null;
+
         mConnected = false;
         //mHandler.removeCallbacks();
         mHandler = null;
