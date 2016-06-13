@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
+import android.widget.Toast;
 import com.mabezdev.MabezWatch.Activities.Main;
 import com.mabezdev.MabezWatch.Bluetooth.BTBGService;
 
@@ -34,7 +35,7 @@ public class myNotificationListener extends NotificationListenerService {
 
         //stop system crap
         packageFilter.add("android");
-        packageFilter.add("mabezdev");//stop our stuff
+        packageFilter.add("com.mabezdev.MabezWatch");//stop our stuff
         packageFilter.add("clean");
     }
 
@@ -49,7 +50,7 @@ public class myNotificationListener extends NotificationListenerService {
         //todo check EXTRA_BIG_TEXT, EXTRA_TEXT,EXTRA_TEXT_LINES and all other possibles to get all the data we can
         Intent sendNewToApp = new Intent(Main.NOTIFICATION_FILTER);
         Bundle extras = sbn.getNotification().extras;
-        if(!(packageFilter.contains(sbn.getPackageName())) && sbn.isClearable()) {
+        if((!(packageFilter.contains(sbn.getPackageName())) && sbn.isClearable()) || sbn.getId() == 3333) { //3333 is our test notification ID
             sendNewToApp.putExtra("PKG", sbn.getPackageName());
             if(extras.getString(Notification.EXTRA_TITLE)!=null) {
                 sendNewToApp.putExtra("TITLE", extras.getString(Notification.EXTRA_TITLE)+""); // +"" is used to try and stop spannable string cast excetioonms
