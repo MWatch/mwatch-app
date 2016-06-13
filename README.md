@@ -1,13 +1,13 @@
 # MabezWatch-App
 A app to connect to a prototype "smart watch" using arduino and an OLED display
 
-#Main features
+# Main features
   - Filter notifications from different app (Todo)
   - Holds notifications in a queue till the watch is ready for more notifications
   - One button connect
   - Low energy Gatt API
   
-#Weather
+# Weather
   -Configure update times
   -Configure only get data over wifi (todo)
   
