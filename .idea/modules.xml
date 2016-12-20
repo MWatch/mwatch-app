@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/SmartWatch-Phone.iml" filepath="$PROJECT_DIR$/SmartWatch-Phone.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../../Personal Projects/Programming/MabezWatch-App/Libs/YWeatherGetter4a-master/library_project/library_project.iml" filepath="$PROJECT_DIR$/../../Personal Projects/Programming/MabezWatch-App/Libs/YWeatherGetter4a-master/library_project/library_project.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/MabezWatch-App.iml" filepath="$PROJECT_DIR$/.idea/modules/MabezWatch-App.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/watchapp/watchapp.iml" filepath="$PROJECT_DIR$/.idea/modules/watchapp/watchapp.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/yahooweather/yahooweather.iml" filepath="$PROJECT_DIR$/.idea/modules/yahooweather/yahooweather.iml" />
     </modules>
   </component>
 </project>
