@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class BTBGService extends Service {
 
-    private static final int SEND_DELAY = 50; //delay between
+    private static final int SEND_DELAY = 100; //delay between
     private NotificationReceiver notificationReceiver;
     private final static String NOTIFICATION_TAG = "<n>";
     private final static String DATE_TAG = "<d>";
