@@ -30,7 +30,7 @@ import com.mabezdev.MabezWatch.myNotificationListener;
 
 public class Main extends Activity { // extend AppCompatActivity when we need
 
-    private Button enablePush;
+    private Button enablePush, pushWeather;
     private Button addFilter;
     private Button scanButton;
     private TextView statusText;
@@ -66,7 +66,8 @@ public class Main extends Activity { // extend AppCompatActivity when we need
         }
 
         //notificationQueue = new ArrayList<Bundle>();
-        filter = new ArrayList<String>();
+        filter = new ArrayList<>();
+
         //startListening for notifications
         startService(new Intent(getBaseContext(),myNotificationListener.class));
 
@@ -162,7 +163,7 @@ public class Main extends Activity { // extend AppCompatActivity when we need
 
 
         /*
-        Debugging tool - >
+        Debugging tools - >
          */
         enablePush = (Button) findViewById(R.id.notification);
         enablePush.setOnClickListener(new OnClickListener() {
@@ -173,6 +174,17 @@ public class Main extends Activity { // extend AppCompatActivity when we need
             }
         });
 
+        pushWeather = (Button) findViewById(R.id.weather);
+        pushWeather.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(isConnected){
+                    myBTService.queryWeather();
+                } else {
+                    Toast.makeText(Main.this,"Cannot push weather data when unconnected.", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
 
     }
 

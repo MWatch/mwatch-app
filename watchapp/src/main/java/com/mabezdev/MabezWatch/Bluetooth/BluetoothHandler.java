@@ -102,11 +102,11 @@ public class BluetoothHandler {
         mDeviceAddress = deviceAddress;
         Intent gattServiceIntent = new Intent(context, BLEService.class);
 
-        if(!((BTBGService)context).bindService(gattServiceIntent, mServiceConnection, ((BTBGService)context).BIND_AUTO_CREATE)){
+        if(!(context).bindService(gattServiceIntent, mServiceConnection, (context).BIND_AUTO_CREATE)){
             System.out.println("bindService failed!");
         }
 
-        ((BTBGService)context).registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+        (context).registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
         if (mBLEService != null) {
             final boolean result = mBLEService.connect(mDeviceAddress);
         }else{
@@ -268,7 +268,6 @@ public class BluetoothHandler {
     }
 
     public void onPause() {
-        // TODO Auto-generated method stub
         if(mConnected){
             ((BTBGService) context).unregisterReceiver(mGattUpdateReceiver);
         }

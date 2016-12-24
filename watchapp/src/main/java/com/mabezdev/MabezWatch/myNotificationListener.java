@@ -48,6 +48,7 @@ public class myNotificationListener extends NotificationListenerService {
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         //todo check EXTRA_BIG_TEXT, EXTRA_TEXT,EXTRA_TEXT_LINES and all other possibles to get all the data we can
+        // http://iamrobj.com/how-floatifications-captures-android-notification-content-part-1/ read this
         Intent sendNewToApp = new Intent(Main.NOTIFICATION_FILTER);
         Bundle extras = sbn.getNotification().extras;
         if((!(packageFilter.contains(sbn.getPackageName())) && sbn.isClearable()) || sbn.getId() == 3333) { //3333 is our test notification ID

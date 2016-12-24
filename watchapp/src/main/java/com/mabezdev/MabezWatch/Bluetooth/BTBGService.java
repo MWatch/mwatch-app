@@ -1,8 +1,6 @@
 package com.mabezdev.MabezWatch.Bluetooth;
 
-import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -10,13 +8,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.*;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 import android.widget.Toast;
 import com.mabezdev.MabezWatch.Activities.Main;
-import com.mabezdev.MabezWatch.R;
 import com.mabezdev.MabezWatch.Util.NotificationUtils;
-import com.mabezdev.yahooweather.Test;
 import com.mabezdev.yahooweather.WeatherInfo;
 import com.mabezdev.yahooweather.YahooWeather;
 import com.mabezdev.yahooweather.YahooWeatherInfoListener;
@@ -29,7 +24,7 @@ import java.util.*;
  */
 public class BTBGService extends Service {
 
-    private static final int SEND_DELAY = 100; //delay between
+    private static final int SEND_DELAY = 100; //delay between each message in ms
     private NotificationReceiver notificationReceiver;
     private final static String NOTIFICATION_TAG = "<n>";
     private final static String DATE_TAG = "<d>";
@@ -66,6 +61,7 @@ public class BTBGService extends Service {
         public void onConnected();
         public void onDisconnected();
     }
+
     /*
     BLE HM-11 SERVICES:
 
@@ -75,8 +71,6 @@ public class BTBGService extends Service {
 
     0000ffe1-0000-1000-8000-00805f9b34fb
      */
-
-    //todo might need this to be a bound service so we can get data like if its connected or not
 
     @Override
     public int onStartCommand(Intent i,int flags,int srtID){
@@ -90,8 +84,6 @@ public class BTBGService extends Service {
         IntentFilter filter = new IntentFilter();
         filter.addAction(Main.NOTIFICATION_FILTER);
         registerReceiver(notificationReceiver,filter);
-        Test t = new Test();
-        System.out.println(t.test());
         //init bt handler
         bluetoothHandler = new BluetoothHandler(this);
 
@@ -158,6 +150,12 @@ public class BTBGService extends Service {
                     shouldSendNotifications = false;
                 } else if(data.equals(WEATHER_TAG)){
                     //add the 5 day forecast to the queue
+                } else if(data.equals("<c>")){
+                    // clear the notification queue
+                } else if(data.equals("<r>")){
+                    // resend the current notification
+                } else if(data.equals("<ok>")){
+                    // the last sent item was successfully recieved, remove from queue
                 }
             }
         });
@@ -172,6 +170,8 @@ public class BTBGService extends Service {
                     transmitQueue.add(formatWeatherData(weatherInfo.getForecastInfo1().getForecastDay(),
                             Integer.toString(weatherInfo.getCurrentTemp()),
                             weatherInfo.getForecastInfo1().getForecastText()));
+                } else {
+                    Toast.makeText(BTBGService.this,"Failed to retrieve weather information.",Toast.LENGTH_SHORT).show();
                 }
             }
         };
@@ -215,13 +215,17 @@ public class BTBGService extends Service {
         @Override
         public void run() {
             if(isConnected) {
-                yahooWeather.queryYahooWeatherByGPS(getBaseContext(), yahooWeatherInfoListener);
+                queryWeather();
             } else {
                 Log.i("WEATHER", "Not querying as the device is not connected.");
             }
             weatherHandler.postDelayed(this, WEATHER_REFRESH_TIME);//get new data every @WEATHER_REFRESH_TIME seconds.
         }
     };
+
+    public void queryWeather(){
+        yahooWeather.queryYahooWeatherByGPS(getBaseContext(), yahooWeatherInfoListener);
+    }
 
     private Runnable timerRunnable = new Runnable() {
         @Override
@@ -243,7 +247,7 @@ public class BTBGService extends Service {
             if(!transmitQueue.isEmpty()){
                 if(!isTransmitting) { //wait till we are not transmitting
                     //delay between transmissions
-                    SystemClock.sleep(1000);
+                    SystemClock.sleep(500);
 
                     if(transmitQueue.peek()[0].equals(NOTIFICATION_TAG) && !shouldSendNotifications) {
                         if(transmitQueue.size() > 1) { //only rotate the queue if there other item to send in its place else just wait
@@ -301,7 +305,9 @@ public class BTBGService extends Service {
             }
             format.add(NOTIFICATION_TAG);
             format.add(pkg);
-            format.add(TITLE_TAG + title + CLOSE_TAG);
+            format.add(TITLE_TAG);
+            format.add(title);
+            format.add(CLOSE_TAG);
             int charIndex = 0;
             String temp = "";
             //make sure we don't array out of bounds
@@ -313,7 +319,8 @@ public class BTBGService extends Service {
             if (text.length() > CHUNK_SIZE) {
                 for (int i = 0; i < len; i++) { //max 150 for message + 20 chars for tags
                     if (charIndex >= CHUNK_SIZE) {//send in chunks of 64 chars
-                        format.add(DATA_INTERVAL_TAG + temp);
+                        format.add(DATA_INTERVAL_TAG);
+                        format.add(temp);
                         temp = "";
                         charIndex = 0;
                     } else {
@@ -420,8 +427,8 @@ public class BTBGService extends Service {
         protected void onPreExecute()
         {
             isTransmitting = true;
-            //Log.i(TAG, "Transmitting data with TAG: "+data[0]);
-            printData();
+            Log.i(TAG, "Transmitting data with TAG: "+data[0]);
+            //printData();
         }
 
         @Override
@@ -435,7 +442,7 @@ public class BTBGService extends Service {
         {
             super.onPostExecute(result);
             isTransmitting = false;
-            Log.i(TAG,"Transmission complete.");
+            Log.i(TAG,"Transmission complete. "+ transmitQueue.size() +" items left in the sending queue.");
         }
     }
 }
