@@ -2,9 +2,9 @@
 Todo:
     - Condense the bt services into one service
     - Condense to one activity eventually - DONE
-    - bind single service to the single activity
+    - bind single service to the single activity - DONE
     - handle all unbinding and un registering of all listeners, Broadcast receivers and services.
-    - un clearable notification that live updates with how long the device has been connected
+    - un clearable notification that live updates with how long the device has been connected - DONE - BUG with out own notifiaction
     - filters check box
     - settings page
     - override onPause and onResume Activity methods to make sure it says the current state of connection on resume
@@ -15,11 +15,11 @@ Todo:
         - enable/disable notifications
         - weather check time
     - check EXTRA_BIG_TEXT, EXTRA_TEXT,EXTRA_TEXT,EXTRA_TEXT_LINES and all other possibles,
-      to get all the data we can from the notifications
-    - add check for bluetooth on connect
+      to get all the data we can from the notifications - DONE
+    - add check for bluetooth on connect - DONEish - needs a closer look at
     - check if notification service is running before connecting (make it run if it isn't)
     - Show searching when looking for MabezWatch - DONE
-    -
+    - Using the ID system android provides for notifications, when we read a notification on the phone remove it from the watch
 
 
 Bug List:

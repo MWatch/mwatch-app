@@ -217,7 +217,7 @@ public class BTBGService extends Service {
             if(isConnected) {
                 queryWeather();
             } else {
-                Log.i("WEATHER", "Not querying as the device is not connected.");
+                Log.i("WEATHER", "Not querying as the device is not connected. Check internet connection permissions.");
             }
             weatherHandler.postDelayed(this, WEATHER_REFRESH_TIME);//get new data every @WEATHER_REFRESH_TIME seconds.
         }
@@ -412,10 +412,18 @@ public class BTBGService extends Service {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            String pkgName = intent.getStringExtra("PKG").toString();
-            String title = intent.getStringExtra("TITLE").toString();
-            String text = intent.getStringExtra("TEXT").toString();
-            //now package this up and add tot he transmit queue
+            String pkgName = intent.getStringExtra("PKG");
+            String title = intent.getStringExtra("TITLE");
+            String text = intent.getStringExtra("TEXT");
+            String id = intent.getStringExtra("ID");
+
+            Log.i(TAG, "[New notification]");
+            Log.i(TAG, "\tPkg: "+pkgName);
+            Log.i(TAG, "\tid: "+id);
+            Log.i(TAG, "\ttitle: "+title);
+            Log.i(TAG, "\ttext: "+text);
+
+            //now package this up and add to the transmit queue
             transmitQueue.add(formatNotificationData(pkgName,title,text));
         }
     }
