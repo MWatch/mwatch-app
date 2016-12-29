@@ -78,22 +78,23 @@ public class myNotificationListener extends NotificationListenerService {
         // http://iamrobj.com/how-floatifications-captures-android-notification-content-part-1/ read this
         Intent sendNewToApp = new Intent(Main.NOTIFICATION_FILTER);
         Bundle extras = sbn.getNotification().extras;
-//        System.out.println("Basic Notification text parsed:\n"+parseBasicText(extras)+"\n\n");
-//        System.out.println("Extra Notification text parsed:\n"+parseExtraText(extras)+"\n\n");
         /*
             Filters by package, then checks that it is not an update to a already posted notification (like our connection info notification) using isOnGoing()
          */
         if(sbn.getId() == 3333 || !packageFilter.contains(sbn.getPackageName()) && !sbn.isOngoing() ) { //3333 is our test notification ID, remove after debugging
+//            System.out.println("Basic Notification text parsed:\n"+parseBasicText(extras)+"\n\n");
+//            System.out.println("Extra Notification text parsed:\n"+parseExtraText(extras)+"\n\n");
+
             sendNewToApp.putExtra("ID",sbn.getId()); // will be used to dismiss notifications on the watch if we have seen them on the phone
             sendNewToApp.putExtra("PKG", sbn.getPackageName());
             sendNewToApp.putExtra("TITLE", extras.getString(Notification.EXTRA_TITLE));
             String nText = parseExtraText(extras) == null ? parseBasicText(extras) : parseExtraText(extras);
             sendNewToApp.putExtra("TEXT", nText); //
             sendBroadcast(sendNewToApp);
-        } else {
+        } /* else {
             if(!packageFilter.contains(sbn.getPackageName()))
                 Log.i("NOTIFICATION_SERVICE","Not pushing notification with package name: "+sbn.getPackageName());
-        }
+        } */
     }
 
     @Override

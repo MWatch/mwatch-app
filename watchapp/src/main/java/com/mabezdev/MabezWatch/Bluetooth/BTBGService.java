@@ -415,7 +415,7 @@ public class BTBGService extends Service {
             String pkgName = intent.getStringExtra("PKG");
             String title = intent.getStringExtra("TITLE");
             String text = intent.getStringExtra("TEXT");
-            String id = intent.getStringExtra("ID");
+            int id = intent.getIntExtra("ID",-1); //should never be -1
 
             Log.i(TAG, "[New notification]");
             Log.i(TAG, "\tPkg: "+pkgName);
