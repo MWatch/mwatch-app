@@ -522,6 +522,7 @@ public class BTBGService extends Service {
                 Log.i(TAG, "A Transmission failed, resending!.");
                 new TransmitTask().execute(); // re send the whole notification
                 //TODO: implement a retry timeout so we dont keep trying forever
+                //TODO: find a way to tell the watch to reset so we dont have to resend twice
             }
         }
     }
