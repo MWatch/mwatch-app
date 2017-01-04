@@ -13,15 +13,18 @@ import android.app.Activity;
 
 import java.util.ArrayList;
 
+import android.os.Debug;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.WindowManager;
 import android.widget.*;
 import com.mabezdev.MabezWatch.Bluetooth.BTBGService;
 import com.mabezdev.MabezWatch.Bluetooth.BluetoothHandler;
 import com.mabezdev.MabezWatch.Bluetooth.BluetoothUtil;
 import com.mabezdev.MabezWatch.Bluetooth.DeviceSave;
+import com.mabezdev.MabezWatch.BuildConfig;
 import com.mabezdev.MabezWatch.R;
 import com.mabezdev.MabezWatch.Util.NotificationUtils;
 import com.mabezdev.MabezWatch.Util.ObjectReader;
@@ -186,6 +189,20 @@ public class Main extends Activity { // extend AppCompatActivity when we need
             }
         });
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+//        if (BuildConfig.DEBUG) { // don't even consider it otherwise
+//            if (Debug.isDebuggerConnected()) {
+//                Log.d("SCREEN", "Keeping screen on for debugging, detach debugger and force an onResume to turn it off.");
+//                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+//            } else {
+//                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+//                Log.d("SCREEN", "Keeping screen on for debugging is now deactivated.");
+//            }
+//        }
     }
 
     private void killService() {

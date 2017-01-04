@@ -26,13 +26,13 @@ public class BTBGService extends Service {
 
     private static final int SEND_DELAY = 100; //delay between each message in ms
     private NotificationReceiver notificationReceiver;
-    private final static String NOTIFICATION_TAG = "<n>";
-    private final static String DATE_TAG = "<d>";
-    private final static String WEATHER_TAG = "<w>";
+    private final static String NOTIFICATION_TAG = "n";
+    private final static String DATE_TAG = "d";
+    private final static String WEATHER_TAG = "w";
     private final static String TITLE_TAG = "<t>";
-    private final static String DATA_INTERVAL_TAG = "<i>";
+    //private final static String DATA_INTERVAL_TAG = "<i>";
     private final static String CLOSE_TAG = "<e>";
-    private final static String END_TAG = "<f>";
+    private final static String END_TAG = "*";  // was <f>
     private final static int CHUNK_SIZE = 64; //64 bytes of data
     private final static int WEATHER_REFRESH_TIME = 300000; // 5 mins (300000/1000 = 300/60)
     private String[] data = null;
@@ -55,6 +55,10 @@ public class BTBGService extends Service {
     private long startTime = 0;
     private Handler timerHandler;
     private boolean shouldSendNotifications = true;
+    private boolean readyToSendData = false;
+    private boolean transmissionSuccess = false;
+    private boolean transmissionError = false;
+    //private int errorCode = -1; // -1 no error
 
 
     public interface OnConnectedListener{
@@ -128,7 +132,7 @@ public class BTBGService extends Service {
             public void OnReady(boolean isReady) {
                 // all data that needs to be sent at the start done here
                 Log.i(TAG,"Ready for transmission.");
-                yahooWeather.queryYahooWeatherByGPS(getBaseContext(),yahooWeatherInfoListener);
+                //yahooWeather.queryYahooWeatherByGPS(getBaseContext(),yahooWeatherInfoListener);
                 transmitQueue.add(formatDateData());
             }
         });
@@ -139,7 +143,6 @@ public class BTBGService extends Service {
         bluetoothHandler.setOnReceivedDataListener(new BluetoothHandler.onReceivedDataListener() {
             @Override
             public void onReceivedData(String data) {
-                Log.i(TAG,"Data from the Watch: "+data);
                 //data will be received in 20 byte payloads so we will need to stitch the data together if its longer than that
                 if(data.equals("<n>")){
                     // this means we have run out of space on the smart watch an we should keep the rest in a queue to send when we get notified again
@@ -154,8 +157,20 @@ public class BTBGService extends Service {
                     // clear the notification queue
                 } else if(data.equals("<r>")){
                     // resend the current notification
-                } else if(data.equals("<ok>")){
+                } else if(data.equals("<OK>")){
                     // the last sent item was successfully recieved, remove from queue
+                    Log.i(TAG, "<OK> received, transmission success!");
+                    transmissionSuccess = true;
+                } else if(data.equals("<ACK>")){
+                    // send the rest of data
+                    readyToSendData = true;
+                    Log.i(TAG, "<ACK> received from watch, sending data.");
+                } else if(data.equals("<FAIL>")){
+                    // the watch did not recieve the full data or there was data corruption, start again
+                    transmissionError = true;
+                    Log.i(TAG, "<FAIL> packet received from watch, resending.");
+                } else {
+                    Log.i(TAG,"Data from the Watch: "+data);
                 }
             }
         });
@@ -200,7 +215,7 @@ public class BTBGService extends Service {
 
     private void transmit(String[] formattedData){
         //delay between each statement it received individual
-        for(int i=0; i < formattedData.length; i++){
+        for(int i=1; i < formattedData.length; i++){  // i = 1 to stop sending the first tag
             if(bluetoothHandler!=null) {
                 bluetoothHandler.sendData(formattedData[i].getBytes());
             } else {
@@ -215,7 +230,7 @@ public class BTBGService extends Service {
         @Override
         public void run() {
             if(isConnected) {
-                queryWeather();
+                //queryWeather();
             } else {
                 Log.i("WEATHER", "Not querying as the device is not connected. Check internet connection permissions.");
             }
@@ -254,7 +269,7 @@ public class BTBGService extends Service {
                             transmitQueue.add(transmitQueue.poll()); //move notification to the back of the queue
                         }
                     } else {
-                        data = transmitQueue.poll();//remove from queue and send it
+                        data = transmitQueue.peek();//remove from queue and send it
                         if(data!=null) {
                             new TransmitTask().execute();
                         } else {
@@ -319,7 +334,6 @@ public class BTBGService extends Service {
             if (text.length() > CHUNK_SIZE) {
                 for (int i = 0; i < len; i++) { //max 150 for message + 20 chars for tags
                     if (charIndex >= CHUNK_SIZE) {//send in chunks of 64 chars
-                        format.add(DATA_INTERVAL_TAG);
                         format.add(temp);
                         temp = "";
                         charIndex = 0;
@@ -329,9 +343,9 @@ public class BTBGService extends Service {
                     charIndex++;
                 }
                 //this adds the last piece of data if it is under 64 characters
-                format.add(DATA_INTERVAL_TAG + temp);
+                format.add(temp);
             } else {
-                format.add(DATA_INTERVAL_TAG + text);
+                format.add(text);
             }
             format.add(END_TAG);
             return format.toArray(new String[format.size()]);
@@ -428,6 +442,14 @@ public class BTBGService extends Service {
         }
     }
 
+    private int calculateCheckSum(String[] data){
+        int dataLen = 0;
+        for(int i = 1; i < data.length; i++){ // skip the first tag as this is just for the app side
+            dataLen += data[i].length();
+        }
+        return dataLen;
+    }
+
     private class TransmitTask extends AsyncTask<Void, Void, Void>  // UI thread
     {
 
@@ -435,22 +457,72 @@ public class BTBGService extends Service {
         protected void onPreExecute()
         {
             isTransmitting = true;
-            Log.i(TAG, "Transmitting data with TAG: "+data[0]);
+            //Log.i(TAG, "Transmitting data with TAG: "+data[0]);
             //printData();
         }
 
         @Override
         protected Void doInBackground(Void... devices)
         {
-            transmit(data);
+            // send meta data packet
+            String init = "<*>"+data[0]+Integer.toString(calculateCheckSum(data));
+
+            Log.i(TAG, init+" - init packet sent.");
+
+            transmit(new String[]{"Init Packet",init}); // plus inteiontally failes the ackk rember to remoive
+            int timeout = 0;
+            while(!readyToSendData){ //wait till we recieve the ack packet, add increment time out here
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                timeout++;
+                if(timeout > 10){
+                    System.out.println("ACK timeout, retry!");
+                    break;
+                }
+            }
+
+            if(readyToSendData) {
+                transmit(data);
+            } else {
+                transmissionError = true;
+            }
+
             return null;
         }
         @Override
         protected void onPostExecute(Void result) //after the doInBackground, it checks if everything went fine
         {
             super.onPostExecute(result);
-            isTransmitting = false;
-            Log.i(TAG,"Transmission complete. "+ transmitQueue.size() +" items left in the sending queue.");
+            int timeout = 0;
+            while(!transmissionSuccess){ // while we haven't got the OKAY from the watch, check if there were any errors
+                if(transmissionError){
+                    transmissionError = false; //reset flag
+                    break;
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                timeout++;
+                if(timeout > 20){ //wait 2 seconds
+                    System.out.println("checkSum OKAY timeout, retry!");
+                    break;
+                }
+            }
+            if(transmissionSuccess) {
+                transmissionSuccess = false;
+                transmitQueue.poll(); // remove from the queue as it was sent successfully
+                isTransmitting = false;
+                Log.i(TAG, "Transmission complete. " + transmitQueue.size() + " items left in the sending queue.");
+            } else {
+                Log.i(TAG, "A Transmission failed, resending!.");
+                new TransmitTask().execute(); // re send the whole notification
+                //TODO: implement a retry timeout so we dont keep trying forever
+            }
         }
     }
 }
