@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class BTBGService extends Service {
 
-    private static final int SEND_DELAY = 100; //delay between each message in ms
+    private static final int SEND_DELAY = 30; //delay between each message in ms
     private NotificationReceiver notificationReceiver;
     private final static String NOTIFICATION_TAG = "n";
     private final static String DATE_TAG = "d";
@@ -158,16 +158,16 @@ public class BTBGService extends Service {
                     // resend the current notification
                 } else if(data.equals("<OK>")){
                     // the last sent item was successfully recieved, remove from queue
-                    Log.i(TAG, "<OK> received, transmission success!");
+                    Log.i(TAG, "[Success] <OK> received, transmission success!");
                     transmissionSuccess = true;
                 } else if(data.equals("<ACK>")){
                     // send the rest of data
                     readyToSendData = true;
-                    Log.i(TAG, "<ACK> received from watch, sending data.");
+                    Log.i(TAG, "[Success] <ACK> received from watch, sending data.");
                 } else if(data.equals("<FAIL>")){
                     // the watch did not recieve the full data or there was data corruption, start again
                     transmissionError = true;
-                    Log.i(TAG, "<FAIL> packet received from watch, resending.");
+                    Log.i(TAG, "[Error] <FAIL> packet received from watch, resending.");
                 } else {
                     Log.i(TAG,"Data from the Watch: "+data);
                 }
@@ -221,7 +221,8 @@ public class BTBGService extends Service {
                 Log.i(TAG,"Handler is null stopping transmission.");
                 stopSelf();
             }
-            SystemClock.sleep(SEND_DELAY);
+            //SystemClock.sleep(SEND_DELAY);
+            sleep(SEND_DELAY);
         }
     }
 
@@ -444,6 +445,14 @@ public class BTBGService extends Service {
         return dataLen;
     }
 
+    private void sleep(long millis){
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     private class TransmitTask extends AsyncTask<Void, Void, Void>  // UI thread
     {
 
@@ -466,17 +475,15 @@ public class BTBGService extends Service {
             transmit(new String[]{"Init Packet",init}); // plus inteiontally failes the ackk rember to remoive
             int timeout = 0;
             while(!readyToSendData){ //wait till we recieve the ack packet, add increment time out here
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                sleep(100);
                 timeout++;
-                if(timeout > 10){
-                    System.out.println("ACK timeout, retry!");
+                if(timeout > 25){
+                    System.out.println("[Error]<ACK> timeout, retry!");
                     break;
                 }
             }
+
+            sleep(100);
 
             if(readyToSendData) {
                 transmit(data);
@@ -496,14 +503,10 @@ public class BTBGService extends Service {
                     transmissionError = false; //reset flag
                     break;
                 }
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                sleep(100);
                 timeout++;
-                if(timeout > 20){ //wait 2 seconds
-                    System.out.println("checkSum OKAY timeout, retry!");
+                if(timeout > 25){ //wait 2 seconds
+                    System.out.println("[Error] checkSum <OKAY> timeout, retry!");
                     break;
                 }
             }
@@ -514,8 +517,10 @@ public class BTBGService extends Service {
                 retries = 0;
                 Log.i(TAG, "Transmission complete. " + transmitQueue.size() + " items left in the sending queue.");
             } else {
-                Log.i(TAG, "A Transmission failed, resending!.");
+                Log.i(TAG, "[Error] A Transmission failed, resending!.");
+                sleep(500);
                 transmit(new String[]{"RESET PACKET","<!>"}); // tell the watch to scrap the data and expect a new fresh resend
+                sleep(1000);
                 new TransmitTask().execute(); // re send the whole notification
                 retries++;
                 if(retries > 10) {
@@ -525,3 +530,4 @@ public class BTBGService extends Service {
         }
     }
 }
+
