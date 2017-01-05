@@ -99,7 +99,7 @@ public class myNotificationListener extends NotificationListenerService {
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
-        Log.i("NOTIFICATION_SERVICE","Notification Removed.");
+        Log.i("NOTIFICATION_SERVICE","Notification with id: "+sbn.getId()+" has been removed.");
         // handle remove for watch once we have swiped away
     }
 

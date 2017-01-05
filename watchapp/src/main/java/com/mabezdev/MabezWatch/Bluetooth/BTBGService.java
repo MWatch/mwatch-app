@@ -30,7 +30,7 @@ public class BTBGService extends Service {
     private final static String DATE_TAG = "d";
     private final static String WEATHER_TAG = "w";
     private final static String TITLE_TAG = "<t>";
-    //private final static String DATA_INTERVAL_TAG = "<i>";
+    private final static String INTERVAL_TAG = "<i>";
     private final static String CLOSE_TAG = "<e>";
     private final static String END_TAG = "*";  // was <f>
     private final static int CHUNK_SIZE = 64; //64 bytes of data
@@ -45,8 +45,7 @@ public class BTBGService extends Service {
     private BluetoothHandler bluetoothHandler;
     private Queue<String[]> transmitQueue;
     private boolean isTransmitting;
-    private static final int notificationID = 1234;
-    private static final int DATA_LENGTH = 170;
+    private static final int DATA_LENGTH = 500;
     private final IBinder myBinder = new MyLocalBinder();
     private OnConnectedListener connectionListener;
     public static final int NOTIFICATION_ID = 4444;
@@ -58,7 +57,7 @@ public class BTBGService extends Service {
     private boolean readyToSendData = false;
     private boolean transmissionSuccess = false;
     private boolean transmissionError = false;
-    //private int errorCode = -1; // -1 no error
+    private int retries = 0; // counts time we have retied to send a packet
 
 
     public interface OnConnectedListener{
@@ -292,23 +291,21 @@ public class BTBGService extends Service {
     }
 
     private String[] formatWeatherData(String day,String temp,String forecast){
-        String[] data = new String[7];
+        String[] data = new String[5];
         data[0] = WEATHER_TAG;
         data[1] = day;
-        data[2] = TITLE_TAG;
-        data[3] = temp;
-        data[4] = TITLE_TAG;
-        data[5] = forecast;
-        data[6] = END_TAG;
+        data[2] = INTERVAL_TAG + temp;
+        data[3] = INTERVAL_TAG + forecast;
+        data[4] = END_TAG;
         return data;
     }
 
-    private String[] formatNotificationData(String pkg, String title, String text){
+    private String[] formatNotificationData(int id,String pkg, String title, String text){
         /*
             Data struct on watch:
                 -Package name = 15 characters
                 -Title = 15 characters
-                -Text = 150 characters
+                -Text = up to 500 characters
          */
         if(pkg!=null && title!=null && text!=null) {
             ArrayList<String> format = new ArrayList<String>();
@@ -318,14 +315,11 @@ public class BTBGService extends Service {
             if (title.length() >= 15) {
                 title = title.substring(0, 14);
             }
-            format.add(NOTIFICATION_TAG);
-            format.add(pkg);
-            format.add(TITLE_TAG);
-            format.add(title);
-            format.add(CLOSE_TAG);
+            format.add(NOTIFICATION_TAG); // only for app meta side sake, this never gets sent
+            format.add(pkg + INTERVAL_TAG + title + INTERVAL_TAG);
             int charIndex = 0;
             String temp = "";
-            //make sure we don't array out of bounds
+            //make sure we don't array out of bounds on the watch
             int len = text.length();
             if(len > DATA_LENGTH){
                 len = DATA_LENGTH;
@@ -357,10 +351,10 @@ public class BTBGService extends Service {
     private String[] formatDateData(){
         Date myDate = new Date();
         SimpleDateFormat ft =
-                new SimpleDateFormat("dd MM yyyy HH:mm:ss");
+                new SimpleDateFormat("dd MM yyyy HH mm ss");
         String[] date = new String[3];
         date[0] = DATE_TAG;
-        date[1] = ft.format(myDate)+':';
+        date[1] = ft.format(myDate);
         date[2] = END_TAG;
         return date;
     }
@@ -438,7 +432,7 @@ public class BTBGService extends Service {
             Log.i(TAG, "\ttext: "+text);
 
             //now package this up and add to the transmit queue
-            transmitQueue.add(formatNotificationData(pkgName,title,text));
+            transmitQueue.add(formatNotificationData(id,pkgName,title,text));
         }
     }
 
@@ -517,12 +511,16 @@ public class BTBGService extends Service {
                 transmissionSuccess = false;
                 transmitQueue.poll(); // remove from the queue as it was sent successfully
                 isTransmitting = false;
+                retries = 0;
                 Log.i(TAG, "Transmission complete. " + transmitQueue.size() + " items left in the sending queue.");
             } else {
                 Log.i(TAG, "A Transmission failed, resending!.");
+                transmit(new String[]{"RESET PACKET","<!>"}); // tell the watch to scrap the data and expect a new fresh resend
                 new TransmitTask().execute(); // re send the whole notification
-                //TODO: implement a retry timeout so we dont keep trying forever
-                //TODO: find a way to tell the watch to reset so we dont have to resend twice
+                retries++;
+                if(retries > 10) {
+                    Toast.makeText(BTBGService.this,"A message has failed to send over 10 times, something is seriously wrong.",Toast.LENGTH_LONG).show();
+                }
             }
         }
     }
