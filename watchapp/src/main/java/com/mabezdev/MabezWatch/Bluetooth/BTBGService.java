@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class BTBGService extends Service {
 
-    private static final int SEND_DELAY = 30; //delay between each message in ms
+    private static final int SEND_DELAY = 200; //delay between each message in ms
     private NotificationReceiver notificationReceiver;
     private final static String NOTIFICATION_TAG = "n";
     private final static String DATE_TAG = "d";
@@ -32,7 +32,7 @@ public class BTBGService extends Service {
     private final static String TITLE_TAG = "<t>";
     private final static String INTERVAL_TAG = "<i>";
     private final static String CLOSE_TAG = "<e>";
-    private final static String END_TAG = "*";  // was <f>
+    private final static String END_TAG = "*";  // was *
     private final static int CHUNK_SIZE = 64; //64 bytes of data
     private final static int WEATHER_REFRESH_TIME = 300000; // 5 mins (300000/1000 = 300/60)
     private String[] data = null;
@@ -54,7 +54,7 @@ public class BTBGService extends Service {
     private long startTime = 0;
     private Handler timerHandler;
     private boolean shouldSendNotifications = true;
-    private boolean readyToSendData = false;
+    private boolean ackReceived = false;
     private boolean transmissionSuccess = false;
     private boolean transmissionError = false;
     private int retries = 0; // counts time we have retied to send a packet
@@ -162,7 +162,7 @@ public class BTBGService extends Service {
                     transmissionSuccess = true;
                 } else if(data.equals("<ACK>")){
                     // send the rest of data
-                    readyToSendData = true;
+                    ackReceived = true;
                     Log.i(TAG, "[Success] <ACK> received from watch, sending data.");
                 } else if(data.equals("<FAIL>")){
                     // the watch did not recieve the full data or there was data corruption, start again
@@ -208,23 +208,6 @@ public class BTBGService extends Service {
 
     public void setOnConnectedListener(OnConnectedListener l){
         this.connectionListener = l;
-    }
-
-
-
-    private void transmit(String[] formattedData){
-        //delay between each statement it received individual
-        for(int i=1; i < formattedData.length; i++){  // i = 1 to stop sending the first tag
-            if(bluetoothHandler!=null) {
-                bluetoothHandler.sendData(formattedData[i].getBytes());
-            } else {
-                Log.i(TAG,"Handler is null stopping transmission.");
-                onDestroy();
-                stopSelf();
-            }
-            //SystemClock.sleep(SEND_DELAY);
-            sleep(SEND_DELAY);
-        }
     }
 
     private Runnable weatherRunnable = new Runnable() {
@@ -462,6 +445,63 @@ public class BTBGService extends Service {
     as if a single chunk is missing just one char, the whole message is resent, sometimes if unlucky we send the message 3-4 times which is bad
      */
 
+//    private void transmitList(String[] formattedData){
+//        //delay between each statement it received individual
+//        for(int i=1; i < formattedData.length; i++){  // i = 1 to stop sending the first tag
+//            if(bluetoothHandler!=null) {
+//                bluetoothHandler.sendData(formattedData[i].getBytes());
+//            } else {
+//                Log.i(TAG,"Handler is null stopping transmission.");
+//                onDestroy();
+//                stopSelf();
+//            }
+//            //SystemClock.sleep(SEND_DELAY);
+//            sleep(SEND_DELAY);
+//        }
+//    }
+
+    private void transmit(String payload){
+        if(bluetoothHandler!=null) {
+            bluetoothHandler.sendData(payload.getBytes());
+        } else {
+            Log.i(TAG,"Handler is null stopping transmission.");
+            onDestroy();
+            stopSelf();
+        }
+    }
+
+    private boolean isAckReceived(){
+        int ackTimeout = 0;
+        while(!ackReceived){ //wait till we recieve the ack packet, add increment time out here
+            sleep(100);
+            ackTimeout++;
+            if(ackTimeout > 25){
+                System.out.println("[Error]<ACK> timeout, retry!");
+                //break;
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isTransmissionSuccess(){
+        int timeout = 0;
+        while(!transmissionSuccess){ // while we haven't got the OKAY from the watch, check if there were any errors
+            if(transmissionError){
+                transmissionError = false; //reset flag
+                //break;
+                return false;
+            }
+            sleep(100);
+            timeout++;
+            if(timeout > 25){ //wait 2.5 seconds
+                System.out.println("[Error] checkSum <OKAY> timeout, retry!");
+                break;
+            }
+        }
+        return true;
+    }
+
     private class TransmitTask extends AsyncTask<Void, Void, Void>  // UI thread
     {
 
@@ -476,29 +516,48 @@ public class BTBGService extends Service {
         @Override
         protected Void doInBackground(Void... devices)
         {
-            // send meta data packet
-            String init = "<*>"+data[0]+Integer.toString(calculateCheckSum(data));
+            int packetIndex = 0;
+            int timeOut = 0;
 
-            Log.i(TAG, init+" - init packet sent.");
-
-            transmit(new String[]{"Init Packet",init}); // plus inteiontally failes the ackk rember to remoive
-            int timeout = 0;
-            while(!readyToSendData){ //wait till we recieve the ack packet, add increment time out here
-                sleep(100);
-                timeout++;
-                if(timeout > 25){
-                    System.out.println("[Error]<ACK> timeout, retry!");
-                    break;
+            while(packetIndex < (data.length - 1) && timeOut < 10){
+                // form new data initializer
+                String metaData = packetIndex == 0 ? "<*>"+data[0]+Integer.toString(calculateCheckSum(data)) : "<+>"+data[packetIndex].length();
+                // send it
+                transmit(metaData);
+                // wait for ack
+                if(isAckReceived()) { // wait for ack or timeout
+                    if(packetIndex != 0) {
+                        Log.i(TAG, "Sending data at index "+packetIndex+" out of "+ (data.length - 1));
+                        Log.i(TAG,data[packetIndex]);
+                        transmit(data[packetIndex]); // send the actual data
+                        if (isTransmissionSuccess()) { // wait for okay or timeout
+                            packetIndex++; // if it was successful we can move on to the next payload
+                        }
+                    } else {
+                        // if its the first packet there is no data to send so just move on
+                        packetIndex++;
+                    }
+                } else { // try again
+                    timeOut++;
                 }
+
+                // reset vars
+                ackReceived = false;
+                transmissionSuccess = false;
+
+                // give the watch time to process information
+                sleep(SEND_DELAY);
             }
 
-            sleep(100);
-
-            if(readyToSendData) {
-                transmit(data);
+            if(timeOut < 10){
+                transmitQueue.poll(); // remove from the queue as it was sent successfully
             } else {
-                transmissionError = true;
+                // failed find out why or just discard the message
             }
+
+
+
+
 
             return null;
         }
@@ -506,36 +565,27 @@ public class BTBGService extends Service {
         protected void onPostExecute(Void result) //after the doInBackground, it checks if everything went fine
         {
             super.onPostExecute(result);
-            int timeout = 0;
-            while(!transmissionSuccess){ // while we haven't got the OKAY from the watch, check if there were any errors
-                if(transmissionError){
-                    transmissionError = false; //reset flag
-                    break;
-                }
-                sleep(100);
-                timeout++;
-                if(timeout > 25){ //wait 2 seconds
-                    System.out.println("[Error] checkSum <OKAY> timeout, retry!");
-                    break;
-                }
-            }
-            if(transmissionSuccess) {
-                transmissionSuccess = false;
-                transmitQueue.poll(); // remove from the queue as it was sent successfully
-                isTransmitting = false;
-                retries = 0;
-                Log.i(TAG, "Transmission complete. " + transmitQueue.size() + " items left in the sending queue.");
-            } else {
-                Log.i(TAG, "[Error] A Transmission failed, resending!.");
-                sleep(500);
-                transmit(new String[]{"RESET PACKET","<!>"}); // tell the watch to scrap the data and expect a new fresh resend
-                sleep(1000);
-                new TransmitTask().execute(); // re send the whole notification
-                retries++;
-                if(retries > 10) {
-                    Toast.makeText(BTBGService.this,"A message has failed to send over 10 times, something is seriously wrong.",Toast.LENGTH_LONG).show();
-                }
-            }
+//            if(transmissionSuccess) {
+//                transmissionSuccess = false;
+//                transmitQueue.poll(); // remove from the queue as it was sent successfully
+//                isTransmitting = false;
+//                retries = 0;
+//                Log.i(TAG, "Transmission complete. " + transmitQueue.size() + " items left in the sending queue.");
+//            } else {
+//                Log.i(TAG, "[Error] A Transmission failed, resending!.");
+//                sleep(500);
+//                transmit("<!>"); // tell the watch to scrap the data and expect a new fresh resend
+//                sleep(1000);
+//                new TransmitTask().execute(); // re send the whole notification
+//                retries++;
+//                if(retries > 10) {
+//                    Toast.makeText(BTBGService.this,"A message has failed to send over 10 times, something is seriously wrong.",Toast.LENGTH_LONG).show();
+//                }
+//            }
+
+            isTransmitting = false;
+
+            Log.i(TAG, "Transmission complete. " + transmitQueue.size() + " items left in the sending queue.");
         }
     }
 }
