@@ -219,6 +219,7 @@ public class BTBGService extends Service {
                 bluetoothHandler.sendData(formattedData[i].getBytes());
             } else {
                 Log.i(TAG,"Handler is null stopping transmission.");
+                onDestroy();
                 stopSelf();
             }
             //SystemClock.sleep(SEND_DELAY);
@@ -325,7 +326,7 @@ public class BTBGService extends Service {
             if(len > DATA_LENGTH){
                 len = DATA_LENGTH;
             }
-            
+
             if (text.length() > CHUNK_SIZE) {
                 for (int i = 0; i < len; i++) { //max 150 for message + 20 chars for tags
                     if (charIndex >= CHUNK_SIZE) {//send in chunks of 64 chars
@@ -342,6 +343,7 @@ public class BTBGService extends Service {
             } else {
                 format.add(text);
             }
+            //format.add(text);
             format.add(END_TAG);
             return format.toArray(new String[format.size()]);
         } else {
@@ -399,6 +401,8 @@ public class BTBGService extends Service {
         bluetoothHandler.close();
         bluetoothHandler = null;
 
+        transmitQueue = null;
+
         super.onDestroy();
     }
 
@@ -452,6 +456,11 @@ public class BTBGService extends Service {
             e.printStackTrace();
         }
     }
+
+    /*#
+    TODO: New transmit algorithm works great but I think it needs to be applied to every chunk of data sent instead of the whole message,
+    as if a single chunk is missing just one char, the whole message is resent, sometimes if unlucky we send the message 3-4 times which is bad
+     */
 
     private class TransmitTask extends AsyncTask<Void, Void, Void>  // UI thread
     {
