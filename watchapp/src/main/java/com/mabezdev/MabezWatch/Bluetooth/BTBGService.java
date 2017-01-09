@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class BTBGService extends Service {
 
-    private static final int SEND_DELAY = 200; //delay between each message in ms
+    private static final int SEND_DELAY = 10; //delay between each message in ms
     private NotificationReceiver notificationReceiver;
     private final static String NOTIFICATION_TAG = "n";
     private final static String DATE_TAG = "d";
@@ -58,6 +58,7 @@ public class BTBGService extends Service {
     private boolean transmissionSuccess = false;
     private boolean transmissionError = false;
     private int retries = 0; // counts time we have retied to send a packet
+    private TransmitTask currentTransmitTask;
 
 
     public interface OnConnectedListener{
@@ -168,6 +169,10 @@ public class BTBGService extends Service {
                     // the watch did not recieve the full data or there was data corruption, start again
                     transmissionError = true;
                     Log.i(TAG, "[Error] <FAIL> packet received from watch, resending.");
+
+                } else if(data.equals("<RESET>")){
+                    Log.i(TAG,"[Error] <RESET> is currently unimplemented, the message will be discarded.");
+                    //TODO: cancel the transmit and resend eventually.
                 } else {
                     Log.i(TAG,"Data from the Watch: "+data);
                 }
@@ -255,7 +260,8 @@ public class BTBGService extends Service {
                     } else {
                         data = transmitQueue.peek();//remove from queue and send it
                         if(data!=null) {
-                            new TransmitTask().execute();
+                            currentTransmitTask = new TransmitTask();
+                            currentTransmitTask.execute();
                         } else {
                             Log.i(TAG,"Transmit data is null, not transmitting.");
                         }
@@ -440,32 +446,11 @@ public class BTBGService extends Service {
         }
     }
 
-    /*#
-    TODO: New transmit algorithm works great but I think it needs to be applied to every chunk of data sent instead of the whole message,
-    as if a single chunk is missing just one char, the whole message is resent, sometimes if unlucky we send the message 3-4 times which is bad
-     */
-
-//    private void transmitList(String[] formattedData){
-//        //delay between each statement it received individual
-//        for(int i=1; i < formattedData.length; i++){  // i = 1 to stop sending the first tag
-//            if(bluetoothHandler!=null) {
-//                bluetoothHandler.sendData(formattedData[i].getBytes());
-//            } else {
-//                Log.i(TAG,"Handler is null stopping transmission.");
-//                onDestroy();
-//                stopSelf();
-//            }
-//            //SystemClock.sleep(SEND_DELAY);
-//            sleep(SEND_DELAY);
-//        }
-//    }
-
     private void transmit(String payload){
         if(bluetoothHandler!=null) {
             bluetoothHandler.sendData(payload.getBytes());
         } else {
             Log.i(TAG,"Handler is null stopping transmission.");
-            onDestroy();
             stopSelf();
         }
     }
@@ -489,7 +474,7 @@ public class BTBGService extends Service {
         while(!transmissionSuccess){ // while we haven't got the OKAY from the watch, check if there were any errors
             if(transmissionError){
                 transmissionError = false; //reset flag
-                //break;
+                Log.i(TAG,"Error set from watch returning false;");
                 return false;
             }
             sleep(100);
@@ -519,23 +504,26 @@ public class BTBGService extends Service {
             int packetIndex = 0;
             int timeOut = 0;
 
-            while(packetIndex < (data.length - 1) && timeOut < 10){
+            while(packetIndex <= (data.length - 1) && timeOut < 10){
                 // form new data initializer
                 String metaData = packetIndex == 0 ? "<*>"+data[0]+Integer.toString(calculateCheckSum(data)) : "<+>"+data[packetIndex].length();
                 // send it
                 transmit(metaData);
                 // wait for ack
                 if(isAckReceived()) { // wait for ack or timeout
-                    if(packetIndex != 0) {
+                    if(packetIndex == 0) {
+                        // if its the first packet there is no data to send so just move on
+                        packetIndex++;
+                    } else {
                         Log.i(TAG, "Sending data at index "+packetIndex+" out of "+ (data.length - 1));
                         Log.i(TAG,data[packetIndex]);
                         transmit(data[packetIndex]); // send the actual data
                         if (isTransmissionSuccess()) { // wait for okay or timeout
                             packetIndex++; // if it was successful we can move on to the next payload
+                        } else {
+                            Log.i(TAG, "Resending index: "+packetIndex);
+                            Log.i(TAG,"Text:\t"+ data[packetIndex]);
                         }
-                    } else {
-                        // if its the first packet there is no data to send so just move on
-                        packetIndex++;
                     }
                 } else { // try again
                     timeOut++;
