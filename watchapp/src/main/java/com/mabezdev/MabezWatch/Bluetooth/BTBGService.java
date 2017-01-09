@@ -516,13 +516,13 @@ public class BTBGService extends Service {
                         packetIndex++;
                     } else {
                         Log.i(TAG, "Sending data at index "+packetIndex+" out of "+ (data.length - 1));
-                        Log.i(TAG,data[packetIndex]);
+                        //Log.i(TAG,data[packetIndex]);
                         transmit(data[packetIndex]); // send the actual data
                         if (isTransmissionSuccess()) { // wait for okay or timeout
                             packetIndex++; // if it was successful we can move on to the next payload
                         } else {
-                            Log.i(TAG, "Resending index: "+packetIndex);
-                            Log.i(TAG,"Text:\t"+ data[packetIndex]);
+                            Log.i(TAG, "Resending data at index "+packetIndex+" out of "+ (data.length - 1));
+                            //Log.i(TAG,"Text:\t"+ data[packetIndex]);
                         }
                     }
                 } else { // try again
