@@ -48,15 +48,11 @@ public class BTBGService extends Service {
     private static final int DATA_LENGTH = 500;
     private final IBinder myBinder = new MyLocalBinder();
     private OnConnectedListener connectionListener;
-    public static final int NOTIFICATION_ID = 4444;
-    private NotificationCompat.Builder mBuilder;
-    private NotificationManager mNotificationManager;
-    private long startTime = 0;
-    private Handler timerHandler;
     private boolean shouldSendNotifications = true;
     private boolean ackReceived = false;
     private boolean transmissionSuccess = false;
     private boolean transmissionError = false;
+    private boolean timeOutFailure = false;
     private int retries = 0; // counts time we have retied to send a packet
     private TransmitTask currentTransmitTask;
 
@@ -97,30 +93,16 @@ public class BTBGService extends Service {
                 if (isConnected) {
                     Log.i("TRANSMIT", "Connected.");
                     BTBGService.this.isConnected = true;
-                    NotificationUtils.showNotification(BTBGService.this,"Connected to MabezWatch ("+BluetoothUtil.getChosenDeviceMac()+").",false,false,NOTIFICATION_ID);
                     //save device for quick connect
                     BluetoothUtil.storeDevice(BluetoothUtil.getChosenDeviceName(),BluetoothUtil.getChosenDeviceMac());
                     if(connectionListener!=null){
                         connectionListener.onConnected();
-                        startTime = System.currentTimeMillis();
-                        timerHandler = new Handler();
-                        timerHandler.postDelayed(timerRunnable,0);
                     }
 
                 } else {
                     if(connectionListener!=null){
                         connectionListener.onDisconnected();
-                        if(timerHandler!=null) {
-                            timerHandler.removeCallbacks(timerRunnable);
-                            timerHandler = null;
-                        }
                     }
-                    NotificationUtils.removeNotification(NOTIFICATION_ID);
-                    long time = calculateTime();
-                    long hours = time / 3600;
-                    long minutes = (time % 3600) / 60;
-                    long seconds = time % 60;
-                    NotificationUtils.showNotification(BTBGService.this,"Disconnected, connection lasted:\n"+String.format("%02d:%02d:%02d", hours, minutes, seconds),true,true,1111);
                     Log.i("TRANSMIT","Disconnected.");
                     BTBGService.this.isConnected = false;
                     stopSelf();
@@ -145,7 +127,6 @@ public class BTBGService extends Service {
             public void onReceivedData(String data) {
                 //data will be received in 20 byte payloads so we will need to stitch the data together if its longer than that
                 if(data.equals("<n>")){
-                    // this means we have run out of space on the smart watch an we should keep the rest in a queue to send when we get notified again
                     Log.i(TAG,"MabezWatch Wants notifications again!");
                     shouldSendNotifications = true;
                 } else if(data.equals("<e>")){
@@ -172,7 +153,8 @@ public class BTBGService extends Service {
 
                 } else if(data.equals("<RESET>")){
                     Log.i(TAG,"[Error] <RESET> is currently unimplemented, the message will be discarded.");
-                    //TODO: cancel the transmit and resend eventually.
+                    //TODO: cancel the transmit and resend eventually. [NOPE]
+                    // currently if something timed out we try to resend again, this should only be used for resetting after the global retries reach a certain amount
                 } else {
                     Log.i(TAG,"Data from the Watch: "+data);
                 }
@@ -197,7 +179,7 @@ public class BTBGService extends Service {
 
         //init weather client
         yahooWeather = new YahooWeather();
-        // set temp to celcius
+        // set temp to celsius
         yahooWeather.setUnit(YahooWeather.UNIT.CELSIUS);
 
         weatherHandler = new Handler();
@@ -231,19 +213,6 @@ public class BTBGService extends Service {
         yahooWeather.queryYahooWeatherByGPS(getBaseContext(), yahooWeatherInfoListener);
     }
 
-    private Runnable timerRunnable = new Runnable() {
-        @Override
-        public void run() {
-            long time = calculateTime();
-            long hours = time / 3600;
-            long minutes = (time % 3600) / 60;
-            long seconds = time % 60;
-            NotificationUtils.updateNotification(String.format("%02d:%02d:%02d", hours, minutes, seconds),NOTIFICATION_ID);
-            timerHandler.postDelayed(timerRunnable,1000);
-        }
-
-    };
-
     private Runnable queueRunnable = new Runnable() {
         @Override
         public void run() {
@@ -272,14 +241,6 @@ public class BTBGService extends Service {
             queueHandler.postDelayed(this, 1000);
         }
     };
-
-    private long calculateTime(){
-        if(startTime !=0){
-            return ((System.currentTimeMillis() - startTime)/1000);
-        } else {
-            return 0;
-        }
-    }
 
     private String[] formatWeatherData(String day,String temp,String forecast){
         String[] data = new String[5];
@@ -365,17 +326,11 @@ public class BTBGService extends Service {
 
     @Override
     public void onDestroy(){
-        NotificationUtils.removeNotification(NOTIFICATION_ID); // get rid of out notification
         System.out.println("Stopping BTBGService");
         try {
             unregisterReceiver(notificationReceiver);
         } catch (Exception e){
             Log.i(TAG,"Notification Receiver was never registered therefore cannot be unregistered.");
-        }
-
-        if(timerHandler!=null){
-            timerHandler.removeCallbacks(timerRunnable);
-            timerHandler = null;
         }
 
         queueHandler.removeCallbacks(queueRunnable);
@@ -494,8 +449,6 @@ public class BTBGService extends Service {
         protected void onPreExecute()
         {
             isTransmitting = true;
-            //Log.i(TAG, "Transmitting data with TAG: "+data[0]);
-            //printData();
         }
 
         @Override
@@ -516,13 +469,11 @@ public class BTBGService extends Service {
                         packetIndex++;
                     } else {
                         Log.i(TAG, "Sending data at index "+packetIndex+" out of "+ (data.length - 1));
-                        //Log.i(TAG,data[packetIndex]);
                         transmit(data[packetIndex]); // send the actual data
                         if (isTransmissionSuccess()) { // wait for okay or timeout
                             packetIndex++; // if it was successful we can move on to the next payload
                         } else {
                             Log.i(TAG, "Resending data at index "+packetIndex+" out of "+ (data.length - 1));
-                            //Log.i(TAG,"Text:\t"+ data[packetIndex]);
                         }
                     }
                 } else { // try again
@@ -541,6 +492,7 @@ public class BTBGService extends Service {
                 transmitQueue.poll(); // remove from the queue as it was sent successfully
             } else {
                 // failed find out why or just discard the message
+                timeOutFailure = true;
             }
 
 
@@ -553,27 +505,20 @@ public class BTBGService extends Service {
         protected void onPostExecute(Void result) //after the doInBackground, it checks if everything went fine
         {
             super.onPostExecute(result);
-//            if(transmissionSuccess) {
-//                transmissionSuccess = false;
-//                transmitQueue.poll(); // remove from the queue as it was sent successfully
-//                isTransmitting = false;
-//                retries = 0;
-//                Log.i(TAG, "Transmission complete. " + transmitQueue.size() + " items left in the sending queue.");
-//            } else {
-//                Log.i(TAG, "[Error] A Transmission failed, resending!.");
-//                sleep(500);
-//                transmit("<!>"); // tell the watch to scrap the data and expect a new fresh resend
-//                sleep(1000);
-//                new TransmitTask().execute(); // re send the whole notification
-//                retries++;
-//                if(retries > 10) {
-//                    Toast.makeText(BTBGService.this,"A message has failed to send over 10 times, something is seriously wrong.",Toast.LENGTH_LONG).show();
-//                }
-//            }
 
-            isTransmitting = false;
+            if(!timeOutFailure) {
+                isTransmitting = false;
+                retries = 0;
+                Log.i(TAG, "Transmission complete. " + transmitQueue.size() + " items left in the sending queue.");
+            } else {
+                Log.i(TAG, "Transmission failed due to transmission timeout, Resending now. Attempt number " + retries + ".");
+                retries++;
+                timeOutFailure = false; // reset for next retry
+                if (retries > 10) {
+                    NotificationUtils.showNotification(BTBGService.this, "[Error] A message failed to send more than 10 times!", true, true, 9999);
+                }
+            }
 
-            Log.i(TAG, "Transmission complete. " + transmitQueue.size() + " items left in the sending queue.");
         }
     }
 }

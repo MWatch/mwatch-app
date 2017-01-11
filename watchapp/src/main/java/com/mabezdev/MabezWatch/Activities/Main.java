@@ -1,9 +1,7 @@
 package com.mabezdev.MabezWatch.Activities;
 
 
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -13,22 +11,23 @@ import android.app.Activity;
 
 import java.util.ArrayList;
 
-import android.os.Debug;
+
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.WindowManager;
+
 import android.widget.*;
 import com.mabezdev.MabezWatch.Bluetooth.BTBGService;
 import com.mabezdev.MabezWatch.Bluetooth.BluetoothHandler;
 import com.mabezdev.MabezWatch.Bluetooth.BluetoothUtil;
-import com.mabezdev.MabezWatch.Bluetooth.DeviceSave;
-import com.mabezdev.MabezWatch.BuildConfig;
+
 import com.mabezdev.MabezWatch.R;
 import com.mabezdev.MabezWatch.Util.NotificationUtils;
-import com.mabezdev.MabezWatch.Util.ObjectReader;
 import com.mabezdev.MabezWatch.myNotificationListener;
+
+
 
 
 public class Main extends Activity { // extend AppCompatActivity when we need
@@ -48,6 +47,10 @@ public class Main extends Activity { // extend AppCompatActivity when we need
     private boolean isFound = false;
     private static final int REQUEST_ENABLE_BT = 1;
     private BluetoothHandler bluetoothHandler;
+
+    private Handler timerHandler;
+    private long startTime = 0;
+    public static final int NOTIFICATION_ID = 4444;
 
 
     @Override
@@ -191,20 +194,6 @@ public class Main extends Activity { // extend AppCompatActivity when we need
 
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-//        if (BuildConfig.DEBUG) { // don't even consider it otherwise
-//            if (Debug.isDebuggerConnected()) {
-//                Log.d("SCREEN", "Keeping screen on for debugging, detach debugger and force an onResume to turn it off.");
-//                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-//            } else {
-//                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-//                Log.d("SCREEN", "Keeping screen on for debugging is now deactivated.");
-//            }
-//        }
-    }
-
     private void killService() {
         if(isBound) {
             Log.i("MAIN", "Disconnecting service.");
@@ -216,7 +205,6 @@ public class Main extends Activity { // extend AppCompatActivity when we need
             Log.i("MAIN", "Can't disconnect, not connected.");
         }
     }
-
 
     private ServiceConnection myConnection = new ServiceConnection() {
 
@@ -239,6 +227,11 @@ public class Main extends Activity { // extend AppCompatActivity when we need
                             statusText.setTextColor(getResources().getColor(R.color.connected));
                         }
                     });
+                    NotificationUtils.showNotification(Main.this,"Connected to MabezWatch ("+BluetoothUtil.getChosenDeviceMac()+").",false,false,NOTIFICATION_ID);
+
+                    startTime = System.currentTimeMillis();
+                    timerHandler = new Handler();
+                    timerHandler.postDelayed(timerRunnable,0);
                 }
 
                 @Override
@@ -253,6 +246,19 @@ public class Main extends Activity { // extend AppCompatActivity when we need
                             statusText.setTextColor(getResources().getColor(R.color.disconnected));
                         }
                     });
+
+                    if(timerHandler!=null) {
+                        timerHandler.removeCallbacks(timerRunnable);
+                        timerHandler = null;
+                    }
+
+                    NotificationUtils.removeNotification(NOTIFICATION_ID);
+                    long time = calculateTime();
+                    long hours = time / 3600;
+                    long minutes = (time % 3600) / 60;
+                    long seconds = time % 60;
+                    NotificationUtils.showNotification(Main.this,"Disconnected, connection lasted:\n"+String.format("%02d:%02d:%02d", hours, minutes, seconds),true,true,1111);
+
                 }
             });
         }
@@ -263,6 +269,26 @@ public class Main extends Activity { // extend AppCompatActivity when we need
 
     };
 
+    private Runnable timerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            long time = calculateTime();
+            long hours = time / 3600;
+            long minutes = (time % 3600) / 60;
+            long seconds = time % 60;
+            NotificationUtils.updateNotification(String.format("%02d:%02d:%02d", hours, minutes, seconds),NOTIFICATION_ID);
+            timerHandler.postDelayed(timerRunnable,1000);
+        }
+
+    };
+
+    private long calculateTime(){
+        if(startTime !=0){
+            return ((System.currentTimeMillis() - startTime)/1000);
+        } else {
+            return 0;
+        }
+    }
 
     @Override
     protected void onDestroy() {

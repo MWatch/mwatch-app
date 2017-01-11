@@ -26,16 +26,32 @@ public class NotificationUtils {
                         .setOngoing(!canClear)
                         .setTicker(null)
                         .setAutoCancel(removeOnClick);
-        // Creates an explicit intent for an Activity in your app
-        Intent resultIntent = new Intent(ctx, Main.class);
+//        // Creates an explicit intent for an Activity in your app
+//        Intent resultIntent = new Intent(ctx, Main.class);
+//
+//        TaskStackBuilder stackBuilder = TaskStackBuilder.create(ctx);
+//        stackBuilder.addParentStack(Main.class);
+//
+//        // Adds the Intent that starts the Activity to the top of the stack
+//        stackBuilder.addNextIntent(resultIntent);
+//        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
+//        mBuilder.setContentIntent(resultPendingIntent);
 
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(ctx);
-        stackBuilder.addParentStack(Main.class);
+        //  this code correctly resumes after tapping the notification
+        final Intent notificationIntent = new Intent(ctx, Main.class);
+        notificationIntent.setAction(Intent.ACTION_MAIN);
+        notificationIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+        // The stack builder object will contain an artificial back stack for the
+        // started Activity.
+        // This ensures that navigating backward from the Activity leads out of
+        // your application to the Home screen.
 
-        // Adds the Intent that starts the Activity to the top of the stack
-        stackBuilder.addNextIntent(resultIntent);
-        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
+        // Adds the back stack for the Intent (but not the Intent itself)
+        PendingIntent resultPendingIntent = PendingIntent.getActivity(ctx,0,notificationIntent,PendingIntent.FLAG_UPDATE_CURRENT);
+
         mBuilder.setContentIntent(resultPendingIntent);
+
+
         mNotificationManager =
                 (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         // mId allows you to update the notification later on.

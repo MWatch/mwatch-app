@@ -20,6 +20,8 @@ Todo:
     - check if notification service is running before connecting (make it run if it isn't)
     - Show searching when looking for MabezWatch - DONE
     - Using the ID system android provides for notifications, when we read a notification on the phone remove it from the watch
+    - [MAJOR AND EASY] - make sure chat apps only send basic data not extra data else we get previous messages bundled in,
+        i.e facebook should not extra text chars etc
 
 
 Bug List:
