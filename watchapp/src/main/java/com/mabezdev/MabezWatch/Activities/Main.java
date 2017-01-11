@@ -6,10 +6,13 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.*;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.app.Activity;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 import android.os.Handler;
@@ -48,6 +51,8 @@ public class Main extends Activity { // extend AppCompatActivity when we need
     private static final int REQUEST_ENABLE_BT = 1;
     private BluetoothHandler bluetoothHandler;
 
+    private static final String TAG = "MAIN_ACTIVITY";
+
     private Handler timerHandler;
     private long startTime = 0;
     public static final int NOTIFICATION_ID = 4444;
@@ -85,6 +90,15 @@ public class Main extends Activity { // extend AppCompatActivity when we need
         setupUI();
 
 
+        final PackageManager pm = getPackageManager();
+        //get a list of installed apps.
+        List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+        Log.i(TAG,"Installed apps that might push notifications: ");
+        for (ApplicationInfo packageInfo : packages) {
+            Log.d(TAG, "Installed package :" + packageInfo.packageName);
+            //Log.d(TAG, "Source dir : " + packageInfo.sourceDir);
+            //Log.d(TAG, "Launch Activity :" + pm.getLaunchIntentForPackage(packageInfo.packageName));
+        }
 
 
     }
@@ -99,17 +113,19 @@ public class Main extends Activity { // extend AppCompatActivity when we need
             @Override
             public void onClick(View v) {
                // scan and look for MabezWatch in the name
-                if(myBluetoothAdapter.isEnabled()) { // check if bluetooth is enabled
-                    if (!isConnected) {
-                        bluetoothHandler.scanLeDevice(true);
-                        statusText.setText(R.string.searching);
-                        statusText.setTextColor(getResources().getColor(R.color.searching));
-                    } else {
-                        killService();
-                    }
-                } else {
+                if(!myBluetoothAdapter.isEnabled()) { // check if bluetooth is enabled
                     //turn on bluetooth
                     myBluetoothAdapter.enable();
+                }
+
+                while(!myBluetoothAdapter.isEnabled());
+
+                if (!isConnected) {
+                    bluetoothHandler.scanLeDevice(true);
+                    statusText.setText(R.string.searching);
+                    statusText.setTextColor(getResources().getColor(R.color.searching));
+                } else {
+                    killService();
                 }
 
             }

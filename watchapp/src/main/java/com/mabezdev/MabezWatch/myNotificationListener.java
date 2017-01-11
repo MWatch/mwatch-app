@@ -21,9 +21,12 @@ import java.util.ArrayList;
  */
 public class myNotificationListener extends NotificationListenerService {
 
-    private ArrayList<String> packageFilter = new ArrayList<String>();
+    private ArrayList<String> packageFilter = new ArrayList<>();
+    private ArrayList<String> chatAppFilter = new ArrayList<>();
+    private ArrayList<Integer> idPool = new ArrayList<>();
     public static final String NOTIFICATION_NEW = "_NEW";
     public static final String NOTIFICATION_REMOVE = "_REMOVE";
+    private static final String TAG = "NOTIFICATION_SERVICE";
 
     @Override
     public void onCreate(){
@@ -36,6 +39,8 @@ public class myNotificationListener extends NotificationListenerService {
         packageFilter.add("android");
         packageFilter.add("com.mabezdev.MabezWatch");//stop our stuff
         packageFilter.add("clean");
+
+        chatAppFilter.add("com.facebook.orca");
     }
 
     @Override
@@ -88,11 +93,17 @@ public class myNotificationListener extends NotificationListenerService {
         if(sbn.getId() == 3333 || !packageFilter.contains(sbn.getPackageName()) && !sbn.isOngoing() ) { //3333 is our test notification ID, remove after debugging
 //            System.out.println("Basic Notification text parsed:\n"+parseBasicText(extras)+"\n\n");
 //            System.out.println("Extra Notification text parsed:\n"+parseExtraText(extras)+"\n\n");
-
+            idPool.add(sbn.getId());
             sendNewToApp.putExtra("ID",sbn.getId()); // will be used to dismiss notifications on the watch if we have seen them on the phone
             sendNewToApp.putExtra("PKG", sbn.getPackageName());
             sendNewToApp.putExtra("TITLE", extras.getString(Notification.EXTRA_TITLE));
-            String nText = parseExtraText(extras) == null ? parseBasicText(extras) : parseExtraText(extras);
+            String nText;
+            if(chatAppFilter.contains(sbn.getPackageName())){
+                Log.d(TAG,"Found a chat app, only pushing basic text.");
+                nText = parseBasicText(extras); // if its a messenger service make sure to only send updates not the full convo text over and over again
+            } else {
+                nText = parseExtraText(extras) == null ? parseBasicText(extras) : parseExtraText(extras);
+            }
             sendNewToApp.putExtra("TEXT", nText); //
             sendBroadcast(sendNewToApp);
         } /* else {
@@ -103,12 +114,15 @@ public class myNotificationListener extends NotificationListenerService {
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
-        Log.i("NOTIFICATION_SERVICE","Notification with id: "+sbn.getId()+" has been removed.");
-        // handle remove for watch once we have swiped away
-        Intent sendNewToApp = new Intent(Main.NOTIFICATION_FILTER);
-        sendNewToApp.putExtra("TYPE",NOTIFICATION_REMOVE);
-        sendNewToApp.putExtra("ID",sbn.getId());
-        sendBroadcast(sendNewToApp);
+        Log.i(TAG,"Notification with id: "+sbn.getId()+" has been removed.");
+        if(idPool.contains(sbn.getId())) { // we know it definitely could be on the watch as it has been transmitted during this session
+            Log.i(TAG,sbn.getId()+" found in id pool, requesting removal on Watch.");
+            idPool.remove((Integer)sbn.getId()); // remove from the pool after
+            Intent sendNewToApp = new Intent(Main.NOTIFICATION_FILTER);
+            sendNewToApp.putExtra("TYPE", NOTIFICATION_REMOVE);
+            sendNewToApp.putExtra("ID", sbn.getId());
+            sendBroadcast(sendNewToApp);
+        }
     }
 
 }

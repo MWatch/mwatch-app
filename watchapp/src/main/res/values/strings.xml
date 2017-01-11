@@ -8,8 +8,8 @@
     <string name="buttonDisconnected">Find MabezWatch</string>
     <string name="buttonConnected">Disconnect</string>
     <string name="Disconnected">Disconnected</string>
-    <string name="Connected">\tConnected\n \t \t \t  \t \t to\nMabezWatch.</string>
-    <string name = "service_name">Notification Grabber</string>
-    <string name = "searching">Searching...</string>
+    <string name="Connected">\tConnected\n \t \t \t \t \t to\nMabezWatch.</string>
+    <string name="service_name">Notification Grabber</string>
+    <string name="searching">Searching...</string>
 
 </resources>

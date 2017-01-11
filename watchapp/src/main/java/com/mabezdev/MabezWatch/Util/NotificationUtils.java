@@ -26,16 +26,6 @@ public class NotificationUtils {
                         .setOngoing(!canClear)
                         .setTicker(null)
                         .setAutoCancel(removeOnClick);
-//        // Creates an explicit intent for an Activity in your app
-//        Intent resultIntent = new Intent(ctx, Main.class);
-//
-//        TaskStackBuilder stackBuilder = TaskStackBuilder.create(ctx);
-//        stackBuilder.addParentStack(Main.class);
-//
-//        // Adds the Intent that starts the Activity to the top of the stack
-//        stackBuilder.addNextIntent(resultIntent);
-//        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
-//        mBuilder.setContentIntent(resultPendingIntent);
 
         //  this code correctly resumes after tapping the notification
         final Intent notificationIntent = new Intent(ctx, Main.class);

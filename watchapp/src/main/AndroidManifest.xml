@@ -8,38 +8,52 @@
     tools:overrideLibrary="com.mabezdev.yahooweather"
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
+    <uses-feature
+            android:name="android.hardware.bluetooth_le"
+            android:required="true"/>
+
+    <android:uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <android:uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <android:uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
     <application
-        android:label="@string/app_name"
-        android:icon="@drawable/ic_launcher"
-        android:configChanges="keyboardHidden|orientation|screenSize"
-        android:launchMode="singleTop">
-        <service android:name=".Bluetooth.BTBGService" android:enabled="true"/>
-        <service android:name=".Bluetooth.BLEService" android:enabled="true"/>
-        <service android:name=".myNotificationListener"
-                 android:label="@string/service_name"
-                 android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:icon="@drawable/ic_launcher"
+            android:label="@string/app_name"
+            android:launchMode="singleTop">
+        <service
+                android:name=".Bluetooth.BTBGService"
+                android:enabled="true"/>
+        <service
+                android:name=".Bluetooth.BLEService"
+                android:enabled="true"/>
+        <service
+                android:name=".myNotificationListener"
+                android:label="@string/service_name"
+                android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
+                <action android:name="android.service.notification.NotificationListenerService"/>
             </intent-filter>
         </service>
 
-
         <activity
-            android:name=".Activities.Main"
-            android:label="@string/app_name"
-            android:configChanges="orientation|keyboard|keyboardHidden"
-            android:screenOrientation="portrait"
-            android:finishOnTaskLaunch="true">
+                android:name=".Activities.Main"
+                android:configChanges="orientation|keyboard|keyboardHidden"
+                android:finishOnTaskLaunch="true"
+                android:label="@string/app_name"
+                android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
+
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity android:name=".Activities.Filtering">
+        </activity>
     </application>
+
 </manifest>
