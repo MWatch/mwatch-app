@@ -22,6 +22,8 @@ import java.util.ArrayList;
 public class myNotificationListener extends NotificationListenerService {
 
     private ArrayList<String> packageFilter = new ArrayList<String>();
+    public static final String NOTIFICATION_NEW = "_NEW";
+    public static final String NOTIFICATION_REMOVE = "_REMOVE";
 
     @Override
     public void onCreate(){
@@ -78,6 +80,8 @@ public class myNotificationListener extends NotificationListenerService {
         // http://iamrobj.com/how-floatifications-captures-android-notification-content-part-1/ read this
         Intent sendNewToApp = new Intent(Main.NOTIFICATION_FILTER);
         Bundle extras = sbn.getNotification().extras;
+
+        sendNewToApp.putExtra("TYPE",NOTIFICATION_NEW);
         /*
             Filters by package, then checks that it is not an update to a already posted notification (like our connection info notification) using isOnGoing()
          */
@@ -101,6 +105,10 @@ public class myNotificationListener extends NotificationListenerService {
     public void onNotificationRemoved(StatusBarNotification sbn) {
         Log.i("NOTIFICATION_SERVICE","Notification with id: "+sbn.getId()+" has been removed.");
         // handle remove for watch once we have swiped away
+        Intent sendNewToApp = new Intent(Main.NOTIFICATION_FILTER);
+        sendNewToApp.putExtra("TYPE",NOTIFICATION_REMOVE);
+        sendNewToApp.putExtra("ID",sbn.getId());
+        sendBroadcast(sendNewToApp);
     }
 
 }

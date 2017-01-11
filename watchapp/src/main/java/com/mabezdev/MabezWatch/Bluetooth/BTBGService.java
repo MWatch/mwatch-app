@@ -19,6 +19,8 @@ import com.mabezdev.yahooweather.YahooWeatherInfoListener;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static com.mabezdev.MabezWatch.myNotificationListener.NOTIFICATION_NEW;
+
 /**
  * Created by Scott on 09/09/2015.
  */
@@ -29,7 +31,7 @@ public class BTBGService extends Service {
     private final static String NOTIFICATION_TAG = "n";
     private final static String DATE_TAG = "d";
     private final static String WEATHER_TAG = "w";
-    private final static String TITLE_TAG = "<t>";
+    private final static String REMOVAL_TAG = "r";
     private final static String INTERVAL_TAG = "<i>";
     private final static String CLOSE_TAG = "<e>";
     private final static String END_TAG = "*";  // was *
@@ -268,7 +270,7 @@ public class BTBGService extends Service {
                 title = title.substring(0, 14);
             }
             format.add(NOTIFICATION_TAG); // only for app meta side sake, this never gets sent
-            format.add(pkg + INTERVAL_TAG + title + INTERVAL_TAG);
+            format.add(id + INTERVAL_TAG + pkg + INTERVAL_TAG + title + INTERVAL_TAG);
             int charIndex = 0;
             String temp = "";
             //make sure we don't array out of bounds on the watch
@@ -369,21 +371,35 @@ public class BTBGService extends Service {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            String pkgName = intent.getStringExtra("PKG");
-            String title = intent.getStringExtra("TITLE");
-            String text = intent.getStringExtra("TEXT");
-            int id = intent.getIntExtra("ID",-1); //should never be -1
 
-            Log.i(TAG, "[New notification]");
-            Log.i(TAG, "\tPkg: "+pkgName);
-            Log.i(TAG, "\tid: "+id);
-            Log.i(TAG, "\ttitle: "+title);
-            Log.i(TAG, "\ttext: "+text);
+            String type = intent.getStringExtra("TYPE");
+            int id = intent.getIntExtra("ID", -1); //should never be -1
 
-            //now package this up and add to the transmit queue
-            transmitQueue.add(formatNotificationData(id,pkgName,title,text));
+            if(type.equals(NOTIFICATION_NEW)) {
+                String pkgName = intent.getStringExtra("PKG");
+                String title = intent.getStringExtra("TITLE");
+                String text = intent.getStringExtra("TEXT");
+
+                Log.i(TAG, "[New notification]");
+                Log.i(TAG, "\tPkg: " + pkgName);
+                Log.i(TAG, "\tid: " + id);
+                Log.i(TAG, "\ttitle: " + title);
+                Log.i(TAG, "\ttext: " + text);
+                //now package this up and add to the transmit queue
+                transmitQueue.add(formatNotificationData(id, pkgName, title, text));
+            } else {
+                transmitQueue.add(formatRemoval(id));
+            }
         }
     }
+    private String[] formatRemoval(int id) {
+        String[] removeNotification = new String[3];
+        removeNotification[0] = REMOVAL_TAG;
+        removeNotification[1] = Integer.toString(id);
+        removeNotification[2] = END_TAG;
+        return removeNotification;
+    }
+
 
     private int calculateCheckSum(String[] data){
         int dataLen = 0;
