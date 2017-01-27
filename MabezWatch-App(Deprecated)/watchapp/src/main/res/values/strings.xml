@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">MabezWatch</string>
+    <string name="action_settings">Settings</string>
+    <string name="on">Turn On</string>
+    <string name="off">Turn Off</string>
+    <string name="buttonDisconnected">Find MabezWatch</string>
+    <string name="buttonConnected">Disconnect</string>
+    <string name="Disconnected">Disconnected</string>
+    <string name="Connected">\tConnected\n \t \t \t \t \t to\nMabezWatch.</string>
+    <string name="service_name">Notification Grabber</string>
+    <string name="searching">Searching...</string>
+
+</resources>

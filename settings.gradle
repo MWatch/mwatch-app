@@ -1,1 +1,1 @@
-include ':watchapp', ':yahooweather'
+include ':app'
