@@ -3,4 +3,7 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+    <color name="disconnected">#FF0F0F</color>
+    <color name="connected">#90FF2F</color>
+    <color name="searching">@android:color/holo_blue_dark</color>
 </resources>

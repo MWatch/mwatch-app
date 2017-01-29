@@ -1,8 +1,9 @@
 <resources>
     <string name="app_name">MabezWatch</string>
     <string name="noti_service_name">Notification Listener for MabezWatch</string>
-    <string name="connected">Connected to MabezWatch</string>
+    <string name="connected">Connected\nto\nMabezWatch</string>
     <string name="disconnected">Disconnected From Watch</string>
     <string name="bConnect">Connect</string>
     <string name="bDisconnect">Disconnect</string>
+    <string name="settings">app_settings</string>
 </resources>

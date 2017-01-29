@@ -3,8 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/MabezWatch-App.iml" filepath="$PROJECT_DIR$/MabezWatch-App.iml" />
-      <module fileurl="file://$PROJECT_DIR$/watchapp/watchapp.iml" filepath="$PROJECT_DIR$/watchapp/watchapp.iml" />
-      <module fileurl="file://$PROJECT_DIR$/yahooweather/yahooweather.iml" filepath="$PROJECT_DIR$/yahooweather/yahooweather.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
 </project>

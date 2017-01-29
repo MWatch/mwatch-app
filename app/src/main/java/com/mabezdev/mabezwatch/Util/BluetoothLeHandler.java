@@ -43,10 +43,10 @@ public class BluetoothLeHandler {
     private static final String DEVICE_NAME = "MabezWatch";
 
     public BluetoothLeHandler(Context ctx, BluetoothAdapter adapter){
+        Log.i(TAG,"Initializing bluetooth Handler.");
         this.context = ctx;
         bluetoothAdapter = adapter;
         bleScanner = bluetoothAdapter.getBluetoothLeScanner();
-        System.out.println("is ble scanner null?"+ (bleScanner == null));
         scanHandler = new Handler();
     }
 
@@ -54,13 +54,10 @@ public class BluetoothLeHandler {
         Log.i(TAG,"Scanning!");
         if(enable){
             // acts as timer to stop scanning
-            scanHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    if(isScanning) {
-                        isScanning = false;
-                        bleScanner.stopScan(mLeScanCallback);
-                    }
+            scanHandler.postDelayed(() -> {
+                if(isScanning) {
+                    isScanning = false;
+                    bleScanner.stopScan(mLeScanCallback);
                 }
             }, 5000);
 
