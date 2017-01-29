@@ -19,6 +19,7 @@ import static com.mabezdev.mabezwatch.Constants.*;
 import static com.mabezdev.mabezwatch.Services.NotificationListener.NOTIFICATION_NEW;
 import static com.mabezdev.mabezwatch.Util.WatchApiFormatter.NOTIFICATION_TAG;
 import static com.mabezdev.mabezwatch.Util.WatchApiFormatter.formatDateData;
+import static com.mabezdev.mabezwatch.Util.WatchUtil.sleep;
 
 /**
  * Created by mabez on 25/01/17.
@@ -269,14 +270,6 @@ public class WatchConnection extends Service {
         return dataLen;
     }
 
-    private void sleep(long millis){
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
     private void transmit(String payload){
         if(bluetoothLeHandler!=null) {
             bluetoothLeHandler.send(payload.getBytes());
@@ -288,12 +281,11 @@ public class WatchConnection extends Service {
 
     private boolean isAckReceived(){
         int ackTimeout = 0;
-        while(!ackReceived){ //wait till we recieve the ack packet, add increment time out here
+        while(!ackReceived){ // wait till we receive the ack packet, add increment time out here
             sleep(100);
             ackTimeout++;
             if(ackTimeout > 25){
                 System.out.println("[Error]<ACK> timeout, retry!");
-                //break;
                 return false;
             }
         }
@@ -312,7 +304,7 @@ public class WatchConnection extends Service {
             timeout++;
             if(timeout > 25){ //wait 2.5 seconds
                 System.out.println("[Error] checkSum <OKAY> timeout, retry!");
-                break;
+                return false;
             }
         }
         return true;

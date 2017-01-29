@@ -193,10 +193,7 @@ public class BluetoothLeHandler {
             int targetLen = 0;
             int offset = 0;
             for (int len = bytes.length; len > 0; len -= 20) {
-                if (len < 20)
-                    targetLen = len;
-                else
-                    targetLen = 20;
+                targetLen = len < 20 ? len : 20;
                 byte[] targetByte = new byte[targetLen];
                 System.arraycopy(bytes, offset, targetByte, 0, targetLen);
                 offset += 20;
@@ -221,12 +218,6 @@ public class BluetoothLeHandler {
         }
         mBluetoothGatt.close();
         mBluetoothGatt = null;
-    }
-
-    public List<BluetoothGattService> getSupportedGattServices() {
-        if (mBluetoothGatt == null) return null;
-
-        return mBluetoothGatt.getServices();
     }
 
 }
