@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.*;
 import android.content.pm.PackageManager;
+import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
@@ -22,6 +23,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import com.mabezdev.mabezwatch.R;
 import com.mabezdev.mabezwatch.Services.WatchConnection;
+import com.mabezdev.mabezwatch.Util.NotificationTimer;
+
 
 public class Main extends AppCompatActivity {
 
@@ -32,6 +35,9 @@ public class Main extends AppCompatActivity {
     private boolean isBound = false;
     private boolean isConnected = false;
     private ActionBar mActionBar;
+
+    private NotificationTimer notificationTimer;
+    private Handler notificationUpdateHandler;
 
     private final String TAG = Main.class.getSimpleName();
 
@@ -52,7 +58,18 @@ public class Main extends AppCompatActivity {
 
         requestNotificationListenerPermissions();
 
+        notificationTimer = new NotificationTimer(this);
+
+        notificationUpdateHandler = new Handler();
     }
+
+    private Runnable notificationUpdater = new Runnable() {
+        @Override
+        public void run() {
+            notificationTimer.update();
+            notificationUpdateHandler.postDelayed(this, 1000);
+        }
+    };
 
     private void requestNotificationListenerPermissions(){
         String notificationListenerString = Settings.Secure.getString(this.getContentResolver(),"enabled_notification_listeners");
@@ -200,21 +217,22 @@ public class Main extends AppCompatActivity {
                         text = getResources().getString(R.string.connected);
                         bText = getResources().getString(R.string.bDisconnect);
                         colorId = R.color.connected;
+                        notificationUpdateHandler.postDelayed(notificationUpdater,1000);
+                        notificationTimer.start(System.currentTimeMillis());
 
                     } else {
                         isConnected = false;
                         text = getResources().getString(R.string.disconnected);
                         bText = getResources().getString(R.string.bConnect);
                         colorId = R.color.disconnected;
+                        notificationUpdateHandler.removeCallbacks(notificationUpdater);
+                        notificationTimer.stop();
                     }
 
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            tvConnectionStatus.setTextColor(getResources().getColor(colorId));
-                            tvConnectionStatus.setText(text);
-                            bConnect.setText(bText);
-                        }
+                    runOnUiThread(() -> {
+                        tvConnectionStatus.setTextColor(getResources().getColor(colorId));
+                        tvConnectionStatus.setText(text);
+                        bConnect.setText(bText);
                     });
                 }
             });

@@ -98,6 +98,10 @@ public class WatchConnection extends Service {
 
     public void disconnect(){ // for manual disconnects
         bluetoothLeHandler.disconnect();
+        transmitQueue = null;
+
+        queueHandler.removeCallbacks(queueRunnable);
+        queueHandler = null;
     }
 
     private Runnable queueRunnable = new Runnable() {
@@ -274,8 +278,7 @@ public class WatchConnection extends Service {
         if(bluetoothLeHandler!=null) {
             bluetoothLeHandler.send(payload.getBytes());
         } else {
-            Log.i(TAG,"Handler is null stopping transmission.");
-            stopSelf();
+            Log.i(TAG,"bluetoothLeHandler is null stopping transmission.");
         }
     }
 
@@ -285,7 +288,7 @@ public class WatchConnection extends Service {
             sleep(100);
             ackTimeout++;
             if(ackTimeout > 25){
-                System.out.println("[Error]<ACK> timeout, retry!");
+                System.out.println("[Error] Acknowledgement timeout.");
                 return false;
             }
         }
@@ -297,13 +300,13 @@ public class WatchConnection extends Service {
         while(!transmissionSuccess){ // while we haven't got the OKAY from the watch, check if there were any errors
             if(transmissionError){
                 transmissionError = false; //reset flag
-                //Log.i(TAG,"Error set from watch returning false;");
+                System.out.println("[Error] packet corruption token received from watch.");
                 return false;
             }
             sleep(100);
             timeout++;
-            if(timeout > 25){ //wait 2.5 seconds
-                System.out.println("[Error] checkSum <OKAY> timeout, retry!");
+            if(timeout > 25){ // wait 2.5 seconds
+                System.out.println("[Error] TransmissionSuccess timeout.");
                 return false;
             }
         }
@@ -322,23 +325,25 @@ public class WatchConnection extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            String type = intent.getStringExtra("TYPE");
-            int id = intent.getIntExtra("ID", -1); //should never be -1
+            if(transmitQueue != null) {
+                String type = intent.getStringExtra("TYPE");
+                int id = intent.getIntExtra("ID", -1); //should never be -1
 
-            if(type.equals(NOTIFICATION_NEW)) {
-                String pkgName = intent.getStringExtra("PKG");
-                String title = intent.getStringExtra("TITLE");
-                String text = intent.getStringExtra("TEXT");
+                if (type.equals(NOTIFICATION_NEW)) {
+                    String pkgName = intent.getStringExtra("PKG");
+                    String title = intent.getStringExtra("TITLE");
+                    String text = intent.getStringExtra("TEXT");
 
-                Log.i(TAG, "[New notification]");
-                Log.i(TAG, "\tPkg: " + pkgName);
-                Log.i(TAG, "\tid: " + id);
-                Log.i(TAG, "\ttitle: " + title);
-                Log.i(TAG, "\ttext: " + text);
-                //now package this up and add to the transmit queue
-                transmitQueue.add(WatchApiFormatter.formatNotificationData(id, pkgName, title, text));
-            } else {
-                transmitQueue.add(WatchApiFormatter.formatRemoval(id));
+                    Log.i(TAG, "[New notification]");
+                    Log.i(TAG, "\tPkg: " + pkgName);
+                    Log.i(TAG, "\tid: " + id);
+                    Log.i(TAG, "\ttitle: " + title);
+                    Log.i(TAG, "\ttext: " + text);
+                    //now package this up and add to the transmit queue
+                    transmitQueue.add(WatchApiFormatter.formatNotificationData(id, pkgName, title, text));
+                } else {
+                    transmitQueue.add(WatchApiFormatter.formatRemoval(id));
+                }
             }
         }
     }

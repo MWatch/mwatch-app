@@ -29,7 +29,7 @@ public class NotificationListener extends NotificationListenerService {
 
     @Override
     public void onListenerConnected() {
-        Log.i("NOTIFICATION_SERVICE","Started Notification Service");
+        Log.i(TAG,"Started Notification Service");
         IntentFilter filter = new IntentFilter();
         filter.addAction(NOTIFICATION_FILTER);
 
@@ -63,11 +63,12 @@ public class NotificationListener extends NotificationListenerService {
             sendNewToApp.putExtra("PKG", sbn.getPackageName());
             sendNewToApp.putExtra("TITLE", extras.getString(Notification.EXTRA_TITLE));
             String nText;
+
             if(chatAppFilter.contains(sbn.getPackageName())){
-                Log.d(TAG,"Found a chat app, only pushing basic text.");
                 nText = parseBasicText(extras); // if its a messenger service make sure to only send updates not the full convo text over and over again
             } else {
-                nText = parseExtraText(extras) == null ? parseBasicText(extras) : parseExtraText(extras);
+                String extraText = parseExtraText(extras);
+                nText = extraText == null ? parseBasicText(extras) : extraText;
             }
             sendNewToApp.putExtra("TEXT", nText); //
             sendBroadcast(sendNewToApp);
