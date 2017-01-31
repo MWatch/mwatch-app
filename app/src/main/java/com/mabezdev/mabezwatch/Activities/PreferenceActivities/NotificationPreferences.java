@@ -51,20 +51,14 @@ public class NotificationPreferences extends AppCompatActivity {
         final PackageManager pm = getPackageManager();
         //get a list of installed apps.
         List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
-        Log.i(TAG,"Installed apps that might push notifications: ");
-        for (ApplicationInfo packageInfo : packages) {
-            //Log.d(TAG, "Installed package :" + packageInfo.processName);
-            String name = "NAME";
-            Drawable icon = null;
 
-            try {
-                ApplicationInfo app = pm.getApplicationInfo(packageInfo.packageName, 0);
-                icon = pm.getApplicationIcon(app);
-                name = (String) pm.getApplicationLabel(app);
-            } catch (PackageManager.NameNotFoundException e) {
-                e.printStackTrace();
-            }
+        for (ApplicationInfo packageInfo : packages) {
+            Drawable icon = pm.getApplicationIcon(packageInfo);
+            String name = (String) pm.getApplicationLabel(packageInfo);
+
+            // TODO instead of creating new info we should use the data in AppINfoHandler
             AppInfoItem appInfo = new AppInfoItem(packageInfo.packageName,false,false);
+
             toReturn.add(new NotificationSettingItem(name,icon, appInfo));
         }
         return toReturn;

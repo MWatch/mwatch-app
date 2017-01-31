@@ -22,4 +22,6 @@ public class Constants {
     public static final int SEND_DELAY = 10; //delay between each message in ms
 
     public static final int CONNECTION_TIMEOUT = 6000; //wait time for connection
+
+    public static final String APP_INFO_STORE_FNAME = "AppInfoStore.bin";
 }

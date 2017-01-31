@@ -23,8 +23,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 import com.mabezdev.mabezwatch.R;
 import com.mabezdev.mabezwatch.Services.WatchConnection;
+import com.mabezdev.mabezwatch.Util.AppInfoHandler;
 import com.mabezdev.mabezwatch.Util.NotificationTimer;
 
+import java.io.File;
+
+import static com.mabezdev.mabezwatch.Constants.APP_INFO_STORE_FNAME;
 import static com.mabezdev.mabezwatch.Constants.CONNECTION_TIMEOUT;
 
 
@@ -46,6 +50,8 @@ public class Main extends AppCompatActivity {
 
     private static final int PERMISSION_COARSE_REQUEST_CODE = 1;
 
+    private AppInfoHandler appInfoHandler;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,6 +70,10 @@ public class Main extends AppCompatActivity {
         notificationTimer = new NotificationTimer(this);
 
         notificationUpdateHandler = new Handler();
+
+        if(!AppInfoHandler.loadFromFile(new File(getFilesDir().getPath() + File.separator + APP_INFO_STORE_FNAME))){
+            Log.i(TAG,"AppInfo Failed to load, this may be due to permissions or this is a first time run.");
+        }
     }
 
     private Runnable notificationUpdater = new Runnable() {
