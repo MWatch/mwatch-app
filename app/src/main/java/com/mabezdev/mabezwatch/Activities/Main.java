@@ -30,6 +30,7 @@ import java.io.File;
 
 import static com.mabezdev.mabezwatch.Constants.APP_INFO_STORE_FNAME;
 import static com.mabezdev.mabezwatch.Constants.CONNECTION_TIMEOUT;
+import static java.lang.System.currentTimeMillis;
 
 
 public class Main extends AppCompatActivity {
@@ -74,6 +75,8 @@ public class Main extends AppCompatActivity {
         if(!AppInfoHandler.loadFromFile(new File(getFilesDir().getPath() + File.separator + APP_INFO_STORE_FNAME))){
             Log.i(TAG,"AppInfo Failed to load, this may be due to permissions or this is a first time run.");
         }
+
+        AppInfoHandler.discoverNewApps(getPackageManager().getInstalledApplications(PackageManager.GET_META_DATA));
     }
 
     private Runnable notificationUpdater = new Runnable() {
@@ -81,7 +84,7 @@ public class Main extends AppCompatActivity {
         public void run() {
             notificationTimer.update();
             if(startConnectionMillis != -1){
-                if((System.currentTimeMillis() - startConnectionMillis) > CONNECTION_TIMEOUT){
+                if((currentTimeMillis() - startConnectionMillis) > CONNECTION_TIMEOUT){
                     Log.i(TAG,"Bluetooth connection has timed out, resetting.");
                     startConnectionMillis = -1;
                     watchConnection.disconnect();
@@ -205,7 +208,7 @@ public class Main extends AppCompatActivity {
                             bindService(btIntent, btServiceConnection, Context.BIND_AUTO_CREATE);
                         }
                         // start the timeout
-                        startConnectionMillis = System.currentTimeMillis();
+                        startConnectionMillis = currentTimeMillis();
                     }
                 }
 
@@ -253,7 +256,7 @@ public class Main extends AppCompatActivity {
                         bText = getResources().getString(R.string.bDisconnect);
                         colorId = R.color.connected;
                         notificationUpdateHandler.postDelayed(notificationUpdater,1000);
-                        notificationTimer.start(System.currentTimeMillis());
+                        notificationTimer.start(currentTimeMillis());
 
                     } else {
                         isConnected = false;
@@ -279,6 +282,7 @@ public class Main extends AppCompatActivity {
         }
 
     };
+
 
 
 }

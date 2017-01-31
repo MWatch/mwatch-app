@@ -1,12 +1,15 @@
 package com.mabezdev.mabezwatch.Util;
 
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.util.Log;
 import com.mabezdev.mabezwatch.Model.AppInfoItem;
 import com.mabezdev.mabezwatch.Model.AppInfoStore;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by mabez on 31/01/17.
@@ -46,7 +49,23 @@ public class AppInfoHandler {
             return false;
         }
         appInfoItems = toLoad.getInfoStore();
+        System.out.println("Loaded the following");
+//        for(AppInfoItem i : appInfoItems){
+//            System.out.println(i.getPackageName());
+//        }
         return true;
+    }
+
+    public static void discoverNewApps(List<ApplicationInfo> appList){
+        int newAppCount = 0;
+        for (ApplicationInfo packageInfo : appList) {
+            if(!appInfoItems.contains(packageInfo.packageName)){
+                // found a new installation add it to the array
+                appInfoItems.add(new AppInfoItem(packageInfo.packageName,false,false));
+                newAppCount++;
+            }
+        }
+        Log.i(TAG,"New App discovery complete. " + newAppCount + " app(s) discovered");
     }
 
     public static AppInfoItem get(String packageName){

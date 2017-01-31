@@ -40,13 +40,21 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="com.mabezdev.mabezwatch.Activities.Preferences"
+        <activity android:name=".Activities.Preferences"
                   android:screenOrientation="portrait"
-                  android:configChanges="orientation|keyboardHidden"/>
+                  android:configChanges="orientation|keyboardHidden">
+                  <meta-data
+                    android:name="android.support.PARENT_ACTIVITY"
+                    android:value=".Activities.Main" />
+        </activity>
 
-        <activity android:name="com.mabezdev.mabezwatch.Activities.PreferenceActivities.NotificationPreferences"
+        <activity android:name=".Activities.PreferenceActivities.NotificationPreferences"
                   android:screenOrientation="portrait"
-                  android:configChanges="orientation|keyboardHidden"/>
+                  android:configChanges="orientation|keyboardHidden">
+                  <meta-data
+                    android:name="android.support.PARENT_ACTIVITY"
+                    android:value=".Activities.Preferences" />
+        </activity>
 
     </application>
 

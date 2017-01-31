@@ -37,8 +37,10 @@ public class Preferences extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         prefToolbar = getSupportActionBar();
-        if(prefToolbar != null)
+        if(prefToolbar != null) {
             prefToolbar.setTitle(R.string.app_settings);
+            prefToolbar.setDisplayHomeAsUpEnabled(true);
+        }
 
         initializeViews();
     }
