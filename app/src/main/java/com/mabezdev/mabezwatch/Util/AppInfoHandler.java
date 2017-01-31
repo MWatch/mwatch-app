@@ -4,11 +4,13 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.util.Log;
+import android.util.SparseArray;
 import com.mabezdev.mabezwatch.Model.AppInfoItem;
 import com.mabezdev.mabezwatch.Model.AppInfoStore;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -17,6 +19,9 @@ import java.util.List;
 public class AppInfoHandler {
 
     private static ArrayList<AppInfoItem> appInfoItems = new ArrayList<>();
+    //todo Issue tokens (hasmap keys) to apps objects that need to see/modify data then they use this class to modify the array
+    // i.e Search once, get token, use token over and over again to view modify that element
+    private static HashMap<Integer, AppInfoItem> appInfoItemsHash = new HashMap<>();
     public static final String TAG = "AppInfoHandler";
 
     public static boolean saveToFile(File path){
@@ -59,17 +64,28 @@ public class AppInfoHandler {
     public static void discoverNewApps(List<ApplicationInfo> appList){
         int newAppCount = 0;
         for (ApplicationInfo packageInfo : appList) {
-            if(!appInfoItems.contains(packageInfo.packageName)){
-                // found a new installation add it to the array
-                appInfoItems.add(new AppInfoItem(packageInfo.packageName,false,false));
-                newAppCount++;
+            for(AppInfoItem info : appInfoItems){
+                if(!info.getPackageName().equals(packageInfo.packageName)){
+                    // found a new installation add it to the array
+                    appInfoItems.add(new AppInfoItem(packageInfo.packageName,false,false));
+                    newAppCount++;
+                }
             }
         }
         Log.i(TAG,"New App discovery complete. " + newAppCount + " app(s) discovered");
     }
 
+    // shouldnt be used, as we should always modify the reference in the array
     public static AppInfoItem get(String packageName){
         return null;
+    }
+
+    public static void setBlackListed(int token, boolean isBlacklisted){
+
+    }
+
+    public static void setChatApp(int token, boolean isChatApp){
+
     }
 
     public AppInfoHandler getInstance(){
