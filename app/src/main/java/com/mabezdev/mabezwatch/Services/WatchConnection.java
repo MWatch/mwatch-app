@@ -89,17 +89,28 @@ public class WatchConnection extends Service {
         bluetoothLeHandler = new BluetoothLeHandler(this,mBluetoothAdapter);
         queueHandler = new Handler();
         transmitQueue = new LinkedList<>();
+        resetConnectionVariables(); // reset anything we may have used from a previous connection
 
         // search for MabezWatch and connect to it
         bluetoothLeHandler.scanLe(true);
-
         queueHandler.postDelayed(queueRunnable,500);
     }
 
+    private void resetConnectionVariables(){
+        data = null;
+        isTransmitting = false;
+        shouldSendNotifications = true;
+        ackReceived = false;
+        transmissionSuccess = false;
+        transmissionError = false;
+        timeOutFailure = false;
+        retries = 0;
+    }
+
     public void disconnect(){ // for manual disconnects
+        currentTransmitTask.cancel(true);
         bluetoothLeHandler.disconnect();
         transmitQueue = null;
-
         queueHandler.removeCallbacks(queueRunnable);
         queueHandler = null;
     }
@@ -285,6 +296,7 @@ public class WatchConnection extends Service {
     private boolean isAckReceived(){
         int ackTimeout = 0;
         while(!ackReceived){ // wait till we receive the ack packet, add increment time out here
+            if(!isTransmitting) return false;
             sleep(100);
             ackTimeout++;
             if(ackTimeout > 25){
@@ -297,12 +309,13 @@ public class WatchConnection extends Service {
 
     private boolean isTransmissionSuccess(){
         int timeout = 0;
-        while(!transmissionSuccess){ // while we haven't got the OKAY from the watch, check if there were any errors
+        while(!transmissionSuccess && isTransmitting){ // while we haven't got the OKAY from the watch, check if there were any errors
             if(transmissionError){
                 transmissionError = false; //reset flag
                 System.out.println("[Error] packet corruption token received from watch.");
                 return false;
             }
+            if(!isTransmitting) return false;
             sleep(100);
             timeout++;
             if(timeout > 25){ // wait 2.5 seconds

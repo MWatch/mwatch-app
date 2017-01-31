@@ -9,7 +9,6 @@ public class WatchUtil {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 

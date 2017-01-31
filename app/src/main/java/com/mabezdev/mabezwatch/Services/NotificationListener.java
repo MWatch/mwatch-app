@@ -61,7 +61,7 @@ public class NotificationListener extends NotificationListenerService {
             idPool.add(sbn.getId());
             sendNewToApp.putExtra("ID",sbn.getId()); // will be used to dismiss notifications on the watch if we have seen them on the phone
             sendNewToApp.putExtra("PKG", sbn.getPackageName());
-            sendNewToApp.putExtra("TITLE", extras.getString(Notification.EXTRA_TITLE));
+            sendNewToApp.putExtra("TITLE", extras.getString(Notification.EXTRA_TITLE).toString());
             String nText;
 
             if(chatAppFilter.contains(sbn.getPackageName())){

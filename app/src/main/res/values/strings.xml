@@ -3,7 +3,14 @@
     <string name="notification_service_name">Notification Listener for MabezWatch</string>
     <string name="connected">Connected\nto\nMabezWatch</string>
     <string name="disconnected">Disconnected</string>
+    <string name="searching">Searching</string>
     <string name="bConnect">Connect</string>
     <string name="bDisconnect">Disconnect</string>
-    <string name="settings">app_settings</string>
+    <string name="app_settings">Preferences</string>
+
+    <string-array name="settings_menu">
+        <item>Notification Preferences</item>
+        <item>Bluetooth Preferences</item>
+        <item>About</item>
+    </string-array>
 </resources>

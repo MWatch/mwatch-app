@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.mabezdev.mabezwatch.Constants.*;
+import static com.mabezdev.mabezwatch.Util.WatchUtil.sleep;
 
 /**
  * Created by mabez on 25/01/17.
@@ -40,6 +41,7 @@ public class BluetoothLeHandler {
     private BluetoothGattService bluetoothGattService = null;
 
     private boolean isScanning;
+    private boolean isFound = false;
     private static final String DEVICE_NAME = "MabezWatch";
 
     public BluetoothLeHandler(Context ctx, BluetoothAdapter adapter){
@@ -54,10 +56,13 @@ public class BluetoothLeHandler {
         Log.i(TAG,"Scanning!");
         if(enable){
             // acts as timer to stop scanning
-            scanHandler.postDelayed(() -> {
-                if(isScanning) {
-                    isScanning = false;
-                    bleScanner.stopScan(mLeScanCallback);
+            scanHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (isScanning) {
+                        isScanning = false;
+                        bleScanner.stopScan(mLeScanCallback);
+                    }
                 }
             }, 5000);
 
@@ -82,6 +87,7 @@ public class BluetoothLeHandler {
             if(name != null) {
                 if (name.equals(DEVICE_NAME)) {
                     Log.i(TAG, "Found MabezWatch! MAC: " + result.getDevice().getAddress());
+                    isFound = true;
                     watchDevice = result.getDevice();
                     //stop scanning
                     scanLe(false);
@@ -89,7 +95,6 @@ public class BluetoothLeHandler {
                     connect(watchDevice);
                 }
             }
-
         }
 
         @Override
@@ -199,11 +204,7 @@ public class BluetoothLeHandler {
                 offset += 20;
                 bluetoothGattCharacteristic.setValue(targetByte);
                 mBluetoothGatt.writeCharacteristic(bluetoothGattCharacteristic);
-                try {
-                    Thread.sleep(5);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                sleep(5);
             }
         }
     }
@@ -216,6 +217,8 @@ public class BluetoothLeHandler {
         if (mBluetoothGatt == null) {
             return;
         }
+        isFound = false;
+        watchDevice = null;
         mBluetoothGatt.close();
         mBluetoothGatt = null;
     }

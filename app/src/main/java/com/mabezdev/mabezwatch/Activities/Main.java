@@ -25,6 +25,8 @@ import com.mabezdev.mabezwatch.R;
 import com.mabezdev.mabezwatch.Services.WatchConnection;
 import com.mabezdev.mabezwatch.Util.NotificationTimer;
 
+import static com.mabezdev.mabezwatch.Constants.CONNECTION_TIMEOUT;
+
 
 public class Main extends AppCompatActivity {
 
@@ -35,6 +37,7 @@ public class Main extends AppCompatActivity {
     private boolean isBound = false;
     private boolean isConnected = false;
     private ActionBar mActionBar;
+    private long startConnectionMillis = -1;
 
     private NotificationTimer notificationTimer;
     private Handler notificationUpdateHandler;
@@ -67,6 +70,17 @@ public class Main extends AppCompatActivity {
         @Override
         public void run() {
             notificationTimer.update();
+            if(startConnectionMillis != -1){
+                if((System.currentTimeMillis() - startConnectionMillis) > CONNECTION_TIMEOUT){
+                    Log.i(TAG,"Bluetooth connection has timed out, resetting.");
+                    startConnectionMillis = -1;
+                    watchConnection.disconnect();
+                    runOnUiThread(() -> {
+                        tvConnectionStatus.setTextColor(getColor(R.color.disconnected));
+                        tvConnectionStatus.setText(getString(R.string.disconnected));
+                    });
+                }
+            }
             notificationUpdateHandler.postDelayed(this, 1000);
         }
     };
@@ -161,9 +175,6 @@ public class Main extends AppCompatActivity {
             public void onClick(View view) {
                 Log.i("MAIN","Button clicked!");
 
-                tvConnectionStatus.setTextColor(getResources().getColor(R.color.searching));
-                tvConnectionStatus.setText(!isConnected ? "Searching" : tvConnectionStatus.getText());
-
                 // make sure bluetooth is enabled before connecting
                 if (!((BluetoothManager) Main.this.getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter().isEnabled()) {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -172,7 +183,8 @@ public class Main extends AppCompatActivity {
                     if(isConnected){
                         watchConnection.disconnect();
                     } else {
-                        tvConnectionStatus.setText(!isConnected ? "Connecting" : tvConnectionStatus.getText());
+                        tvConnectionStatus.setTextColor(getResources().getColor(R.color.searching));
+                        tvConnectionStatus.setText(getResources().getString(R.string.searching));
                         if(isBound){
                             Log.i(TAG,"Service already bound, starting new BLE connection.");
                             watchConnection.start();
@@ -182,8 +194,20 @@ public class Main extends AppCompatActivity {
                             Intent btIntent = new Intent(getBaseContext(), WatchConnection.class);
                             bindService(btIntent, btServiceConnection, Context.BIND_AUTO_CREATE);
                         }
+                        // start the timeout
+                        startConnectionMillis = System.currentTimeMillis();
                     }
                 }
+
+                // handle button spamming - once pressed cannot be activated for 2 seconds
+                bConnect.setEnabled(false);
+                bConnect.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        bConnect.setEnabled(true);
+                        bConnect.removeCallbacks(this);
+                    }
+                }, 2000);
             }
         });
 
@@ -206,12 +230,13 @@ public class Main extends AppCompatActivity {
 
             watchConnection.setOnConnectionListener(new WatchConnection.OnConnectionListener() {
                 @Override
-                public void onConnection(boolean connected) {
+                public void onConnection(boolean connected) { //TODO change from boolean to Int connection state connecting, connected, disconneceted
                     String text;
                     String bText;
                     int colorId;
 
                     if(connected){
+                        startConnectionMillis = -1; //reset timeout var
                         isConnected = true;
                         Log.i(TAG,"Connected to MabezWatch");
                         text = getResources().getString(R.string.connected);
@@ -225,7 +250,7 @@ public class Main extends AppCompatActivity {
                         text = getResources().getString(R.string.disconnected);
                         bText = getResources().getString(R.string.bConnect);
                         colorId = R.color.disconnected;
-                        notificationUpdateHandler.removeCallbacks(notificationUpdater);
+                        notificationUpdateHandler.removeCallbacks(notificationUpdater); // stop updating the notification
                         notificationTimer.stop();
                     }
 

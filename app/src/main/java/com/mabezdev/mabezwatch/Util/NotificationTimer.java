@@ -38,8 +38,10 @@ public class NotificationTimer {
     }
 
     public void stop(){
-        mNotificationManager.cancel(NOTIFICATION_ID_STATIC);
+        if(mNotificationManager == null)
+            return;
         show("Disconnected.\nConnection Lasted: " + generateTimeStamp(), NOTIFICATION_ID_DISMISSIBLE,false);
+        mNotificationManager.cancel(NOTIFICATION_ID_STATIC);
         this.startTime = 0;
         mNotificationManager = null;
         mBuilder = null;
