@@ -30,6 +30,7 @@ import java.io.File;
 
 import static com.mabezdev.mabezwatch.Constants.APP_INFO_STORE_FNAME;
 import static com.mabezdev.mabezwatch.Constants.CONNECTION_TIMEOUT;
+import static com.mabezdev.mabezwatch.Util.WatchUtil.sleep;
 import static java.lang.System.currentTimeMillis;
 
 
@@ -76,7 +77,7 @@ public class Main extends AppCompatActivity {
             Log.i(TAG,"AppInfo Failed to load, this may be due to permissions or this is a first time run.");
         }
 
-        AppInfoHandler.discoverNewApps(getPackageManager().getInstalledApplications(PackageManager.GET_META_DATA));
+        //AppInfoHandler.discoverNewApps(getPackageManager().getInstalledApplications(PackageManager.GET_META_DATA));
     }
 
     private Runnable notificationUpdater = new Runnable() {

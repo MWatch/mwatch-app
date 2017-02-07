@@ -1,10 +1,7 @@
 package com.mabezdev.mabezwatch.Util;
 
-import android.content.Context;
 import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.util.Log;
-import android.util.SparseArray;
 import com.mabezdev.mabezwatch.Model.AppInfoItem;
 import com.mabezdev.mabezwatch.Model.AppInfoStore;
 

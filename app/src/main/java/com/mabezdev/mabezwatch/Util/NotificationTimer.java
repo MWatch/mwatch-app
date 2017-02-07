@@ -40,7 +40,11 @@ public class NotificationTimer {
     public void stop(){
         if(mNotificationManager == null)
             return;
-        show("Disconnected.\nConnection Lasted: " + generateTimeStamp(), NOTIFICATION_ID_DISMISSIBLE,false);
+        long time = calculateTime();
+        long hours = time / 3600;
+        long minutes = (time % 3600) / 60;
+        long seconds = time % 60;
+        show("Connection Time " + String.format("%02d:%02d:%02d", hours, minutes, seconds), NOTIFICATION_ID_DISMISSIBLE,false);
         mNotificationManager.cancel(NOTIFICATION_ID_STATIC);
         this.startTime = 0;
         mNotificationManager = null;
