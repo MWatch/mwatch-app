@@ -93,7 +93,7 @@ public class WatchConnection extends Service {
 
         // search for MabezWatch and connect to it
         bluetoothLeHandler.scanLe(true);
-        queueHandler.postDelayed(queueRunnable,500);
+        queueHandler.postDelayed(queueRunnable,100);
     }
 
     private void resetConnectionVariables(){
@@ -122,7 +122,7 @@ public class WatchConnection extends Service {
             if(!transmitQueue.isEmpty()){
                 if(!isTransmitting) { //wait till we are not transmitting
                     //delay between transmissions
-                    SystemClock.sleep(500);
+//                    SystemClock.sleep(50);
 
                     if(transmitQueue.peek()[0].equals(NOTIFICATION_TAG) && !shouldSendNotifications) {
                         if(transmitQueue.size() > 1) { //only rotate the queue if there other item to send in its place else just wait
@@ -140,7 +140,7 @@ public class WatchConnection extends Service {
 
                 }
             }
-            queueHandler.postDelayed(this, 1000);
+            queueHandler.postDelayed(this, 500);
         }
     };
 
@@ -205,42 +205,46 @@ public class WatchConnection extends Service {
 
         @Override
         protected Void doInBackground(Void... devices)
+
         {
-            int packetIndex = 0;
+            for(int i = 0; i < data.length; i++) {
+                transmit(data[i]);
+            }
+//            int packetIndex = 0;
             int ackTimeOut = 0;
             int transmissionTimeOut = 0;
 
-            while(packetIndex <= (data.length - 1) && (ackTimeOut < 10) && (transmissionTimeOut < 10)){
-                // form new data initializer
-                String metaData = packetIndex == 0 ? "<*>"+data[0]+Integer.toString(calculateCheckSum(data)) : "<+>"+data[packetIndex].length();
-                // send it
-                transmit(metaData);
-                // wait for ack
-                if(isAckReceived()) { // wait for ack or timeout
-                    if(packetIndex == 0) {
-                        // if its the first packet there is no data to send so just move on
-                        packetIndex++;
-                    } else {
-                        Log.i(TAG, "Sending data at index "+packetIndex+" out of "+ (data.length - 1));
-                        transmit(data[packetIndex]); // send the actual data
-                        if (isTransmissionSuccess()) { // wait for okay or timeout
-                            packetIndex++; // if it was successful we can move on to the next payload
-                        } else {
-                            Log.i(TAG, "Resending data at index "+packetIndex+" out of "+ (data.length - 1));
-                            transmissionTimeOut++;
-                        }
-                    }
-                } else { // try again
-                    ackTimeOut++;
-                }
-
-                // reset vars
-                ackReceived = false;
-                transmissionSuccess = false;
-
-                // give the watch time to process information
-                sleep(SEND_DELAY);
-            }
+//            while(packetIndex <= (data.length - 1) && (ackTimeOut < 10) && (transmissionTimeOut < 10)){
+//                // form new data initializer
+//                String metaData = packetIndex == 0 ? "<*>"+data[0]+Integer.toString(calculateCheckSum(data)) : "<+>"+data[packetIndex].length();
+//                // send it
+//                transmit(metaData);
+//                // wait for ack
+//                if(isAckReceived()) { // wait for ack or timeout
+//                    if(packetIndex == 0) {
+//                        // if its the first packet there is no data to send so just move on
+//                        packetIndex++;
+//                    } else {
+//                        Log.i(TAG, "Sending data at index "+packetIndex+" out of "+ (data.length - 1));
+//                        transmit(data[packetIndex]); // send the actual data
+//                        if (isTransmissionSuccess()) { // wait for okay or timeout
+//                            packetIndex++; // if it was successful we can move on to the next payload
+//                        } else {
+//                            Log.i(TAG, "Resending data at index "+packetIndex+" out of "+ (data.length - 1));
+//                            transmissionTimeOut++;
+//                        }
+//                    }
+//                } else { // try again
+//                    ackTimeOut++;
+//                }
+//
+//                // reset vars
+//                ackReceived = false;
+//                transmissionSuccess = false;
+//
+//                // give the watch time to process information
+//                sleep(SEND_DELAY);
+//            }
 
             if(transmissionTimeOut < 10 && ackTimeOut < 10){
                 transmitQueue.poll(); // remove from the queue as it was sent successfully
@@ -294,35 +298,36 @@ public class WatchConnection extends Service {
     }
 
     private boolean isAckReceived(){
-        int ackTimeout = 0;
-        while(!ackReceived){ // wait till we receive the ack packet, add increment time out here
-            if(!isTransmitting) return false;
-            sleep(100);
-            ackTimeout++;
-            if(ackTimeout > 25){
-                System.out.println("[Error] Acknowledgement timeout.");
-                return false;
-            }
-        }
-        return true;
+        return true; // TODO remove this
+//        int ackTimeout = 0;
+//        while(!ackReceived){ // wait till we receive the ack packet, add increment time out here
+//            if(!isTransmitting) return false;
+//            sleep(100);
+//            ackTimeout++;
+//            if(ackTimeout > 25){
+//                System.out.println("[Error] Acknowledgement timeout.");
+//                return false;
+//            }
+//        }
+//        return true;
     }
 
     private boolean isTransmissionSuccess(){
-        int timeout = 0;
-        while(!transmissionSuccess && isTransmitting){ // while we haven't got the OKAY from the watch, check if there were any errors
-            if(transmissionError){
-                transmissionError = false; //reset flag
-                System.out.println("[Error] packet corruption token received from watch.");
-                return false;
-            }
-            if(!isTransmitting) return false;
-            sleep(100);
-            timeout++;
-            if(timeout > 25){ // wait 2.5 seconds
-                System.out.println("[Error] TransmissionSuccess timeout.");
-                return false;
-            }
-        }
+//        int timeout = 0;
+//        while(!transmissionSuccess && isTransmitting){ // while we haven't got the OKAY from the watch, check if there were any errors
+//            if(transmissionError){
+//                transmissionError = false; //reset flag
+//                System.out.println("[Error] packet corruption token received from watch.");
+//                return false;
+//            }
+//            if(!isTransmitting) return false;
+//            sleep(100);
+//            timeout++;
+//            if(timeout > 25){ // wait 2.5 seconds
+//                System.out.println("[Error] TransmissionSuccess timeout.");
+//                return false;
+//            }
+//        }
         return true;
     }
 
@@ -353,7 +358,10 @@ public class WatchConnection extends Service {
                     Log.i(TAG, "\ttitle: " + title);
                     Log.i(TAG, "\ttext: " + text);
                     //now package this up and add to the transmit queue
-                    transmitQueue.add(WatchApiFormatter.formatNotificationData(id, pkgName, title, text));
+                    String[] packet = WatchApiFormatter.formatNotificationData(id, pkgName, title, text);
+//                    System.out.print("Data: ");
+//                    System.out.println(packet);
+                    transmitQueue.add(packet);
                 } else {
                     transmitQueue.add(WatchApiFormatter.formatRemoval(id));
                 }
@@ -391,7 +399,7 @@ public class WatchConnection extends Service {
                 }
 
                 // send data data as soon as we can
-                transmitQueue.add(formatDateData());
+//                transmitQueue.add(formatDateData());
 
             } else if (ACTION_DATA_AVAILABLE.equals(action)) {
                 String data = intent.getStringExtra(EXTRA_DATA);

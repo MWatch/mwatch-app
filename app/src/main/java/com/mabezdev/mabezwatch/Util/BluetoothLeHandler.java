@@ -42,7 +42,7 @@ public class BluetoothLeHandler {
 
     private boolean isScanning;
     private boolean isFound = false;
-    private static final String DEVICE_NAME = "MabezWatch";
+    private static final String DEVICE_NAME = "MWatch";
 
     public BluetoothLeHandler(Context ctx, BluetoothAdapter adapter){
         Log.i(TAG,"Initializing bluetooth Handler.");

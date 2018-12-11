@@ -50,7 +50,6 @@ public class NotificationListener extends NotificationListenerService {
     public void onNotificationPosted(StatusBarNotification sbn) {
         Intent sendNewToApp = new Intent(NOTIFICATION_FILTER);
         Bundle extras = NotificationCompat.getExtras(sbn.getNotification());
-
         sendNewToApp.putExtra("TYPE",NOTIFICATION_NEW);
         /*
             Filters by package, then checks that it is not an update to a already posted notification (like our connection info notification) using isOnGoing()

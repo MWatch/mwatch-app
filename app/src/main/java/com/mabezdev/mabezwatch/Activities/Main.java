@@ -9,10 +9,12 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
@@ -225,7 +227,22 @@ public class Main extends AppCompatActivity {
             }
         });
 
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
+                .setSmallIcon(android.R.drawable.btn_star)
+                .setContentTitle("Example Notification")
+                .setContentText("Hello world this is some text")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+
         bPushNotification = (Button) findViewById(R.id.buttonPushNotification);
+        bPushNotification.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                notificationManager.notify(3333, mBuilder.build());
+            }
+        });
+
 
         tvConnectionStatus = (TextView) findViewById(R.id.textViewConnectionState);
 

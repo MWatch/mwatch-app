@@ -9,7 +9,10 @@ import java.util.Date;
  */
 public class WatchApiFormatter {
 
-    public final static String NOTIFICATION_TAG = "n";
+    public final static byte[] STX = {0x2};
+    public final static byte[] ETX = {0x3};
+    public final static byte[] DELIM = {0x1F};
+    public final static String NOTIFICATION_TAG = "N";
     public final static String DATE_TAG = "d";
     public final static String WEATHER_TAG = "w";
     public final static String REMOVAL_TAG = "r";
@@ -38,7 +41,30 @@ public class WatchApiFormatter {
         return removeNotification;
     }
 
-    public static String[] formatNotificationData(int id,String pkg, String title, String text){
+    public static String[] formatNotificationData(int id,String pkg, String title, String text) {
+        if(pkg!=null && title!=null && text!=null) {
+            ArrayList<String> format = new ArrayList<String>();
+            if (pkg.length() >= 15) {
+                pkg = pkg.substring(0, 14);
+            }
+            if (title.length() >= 15) {
+                title = title.substring(0, 14);
+            }
+            format.add(new String(STX));
+            format.add(NOTIFICATION_TAG);
+            format.add(new String(DELIM));
+            format.add(title);
+            //TODO TEXT
+            format.add(new String(ETX));
+
+
+            return format.toArray(new String[format.size()]);
+        } else {
+            return null;
+        }
+    }
+
+    public static String[] formatNotificationDataOld(int id,String pkg, String title, String text){
         /*
             Data struct on watch:
                 -Package name = 15 characters
