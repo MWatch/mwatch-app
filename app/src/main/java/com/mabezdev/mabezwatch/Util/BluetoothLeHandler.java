@@ -82,7 +82,6 @@ public class BluetoothLeHandler {
     private ScanCallback mLeScanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
-            super.onScanResult(callbackType, result);
             String name = result.getDevice().getName();
             if(name != null) {
                 if (name.equals(DEVICE_NAME)) {
@@ -95,17 +94,19 @@ public class BluetoothLeHandler {
                     connect(watchDevice);
                 }
             }
+            super.onScanResult(callbackType, result);
         }
 
         @Override
         public void onBatchScanResults(List<ScanResult> results) {
+            System.out.println("Recv list");
             super.onBatchScanResults(results);
         }
 
         @Override
         public void onScanFailed(int errorCode) {
-            super.onScanFailed(errorCode);
             System.out.println("Error: "+errorCode);
+            super.onScanFailed(errorCode);
         }
     };
 

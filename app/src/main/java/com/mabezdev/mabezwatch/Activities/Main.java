@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.*;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
@@ -190,6 +191,27 @@ public class Main extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Log.i("MAIN","Button clicked!");
+
+                LocationManager lm = (LocationManager)Main.this.getSystemService(Context.LOCATION_SERVICE);
+
+                if (!(lm.isProviderEnabled(LocationManager.GPS_PROVIDER) || lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) )) {
+                    // ask to turn on location
+                    final AlertDialog.Builder builder = new AlertDialog.Builder(Main.this);
+                    builder.setMessage("Your GPS seems to be disabled, do you want to enable it?")
+                            .setCancelable(false)
+                            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                                public void onClick(final DialogInterface dialog, final int id) {
+                                    startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                                }
+                            })
+                            .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                                public void onClick(final DialogInterface dialog, final int id) {
+                                    dialog.cancel();
+                                }
+                            });
+                    final AlertDialog alert = builder.create();
+                    alert.show();
+                }
 
                 // make sure bluetooth is enabled before connecting
                 if (!((BluetoothManager) Main.this.getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter().isEnabled()) {
